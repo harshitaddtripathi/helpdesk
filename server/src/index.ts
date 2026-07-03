@@ -1,0 +1,53 @@
+import path from "node:path";
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import express from "express";
+import { aiRouter } from "./routes/ai";
+import { authRouter } from "./routes/auth";
+import { categoriesRouter } from "./routes/categories";
+import { dashboardRouter } from "./routes/dashboard";
+import { emailRouter } from "./routes/email";
+import { knowledgeBaseRouter } from "./routes/knowledge-base";
+import { ticketsRouter } from "./routes/tickets";
+import { usersRouter } from "./routes/users";
+import { env } from "./lib/env";
+import { errorHandler } from "./middleware/error-handler";
+
+const app = express();
+
+app.use(
+  cors({
+    origin: env.CLIENT_ORIGIN,
+    credentials: true
+  })
+);
+app.use(express.json({ limit: "2mb" }));
+app.use(cookieParser());
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
+app.use("/api/auth", authRouter);
+app.use("/api/users", usersRouter);
+app.use("/api/tickets", ticketsRouter);
+app.use("/api/categories", categoriesRouter);
+app.use("/api/dashboard", dashboardRouter);
+app.use("/api/knowledge-base", knowledgeBaseRouter);
+app.use("/api/ai", aiRouter);
+app.use("/api/email", emailRouter);
+
+if (env.NODE_ENV === "production") {
+  const clientDist = path.join(process.cwd(), "dist", "client");
+  app.use(express.static(clientDist));
+  app.get(/^\/(?!api\/).*/, (_req, res) => {
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+}
+
+app.use(errorHandler);
+
+app.listen(env.PORT, () => {
+  console.log(`API listening on http://localhost:${env.PORT}`);
+});
+
