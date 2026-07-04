@@ -3,7 +3,7 @@ import { UserRole } from "@prisma/client";
 import { z } from "zod";
 import { asyncHandler, HttpError } from "../lib/http";
 import { prisma } from "../lib/prisma";
-import { requireAuth, requireRole } from "../middleware/auth";
+import { requireAuth, requireRole } from "../middleware/require-auth";
 
 export const knowledgeBaseRouter = Router();
 
@@ -63,4 +63,3 @@ knowledgeBaseRouter.post(
     res.status(201).json({ article });
   })
 );
-

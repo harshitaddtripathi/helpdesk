@@ -1,7 +1,7 @@
-import bcrypt from "bcryptjs";
-import { PrismaClient, UserRole } from "@prisma/client";
+import { UserRole } from "@prisma/client";
+import { createEmailPasswordUser, setCredentialPassword } from "../server/src/lib/auth";
+import { prisma } from "../server/src/lib/prisma";
 
-const prisma = new PrismaClient();
 
 const categories = [
   { name: "General questions", slug: "general-questions" },
@@ -21,21 +21,28 @@ async function main() {
     });
   }
 
-  const passwordHash = await bcrypt.hash(adminPassword, 12);
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: adminEmail.toLowerCase() }
+  });
 
-  await prisma.user.upsert({
-    where: { email: adminEmail },
-    update: {
-      name: "Admin",
-      role: UserRole.ADMIN,
-      active: true
-    },
-    create: {
-      email: adminEmail,
-      name: "Admin",
-      passwordHash,
-      role: UserRole.ADMIN
-    }
+  if (existingAdmin) {
+    await prisma.user.update({
+      where: { id: existingAdmin.id },
+      data: {
+        name: "Admin",
+        role: UserRole.ADMIN,
+        active: true
+      }
+    });
+    await setCredentialPassword(existingAdmin.id, adminPassword);
+    return;
+  }
+
+  await createEmailPasswordUser({
+    email: adminEmail,
+    name: "Admin",
+    password: adminPassword,
+    role: UserRole.ADMIN
   });
 }
 
@@ -48,4 +55,3 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
-

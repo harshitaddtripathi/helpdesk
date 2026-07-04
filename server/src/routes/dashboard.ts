@@ -2,7 +2,7 @@ import { Router } from "express";
 import { TicketStatus } from "@prisma/client";
 import { asyncHandler } from "../lib/http";
 import { prisma } from "../lib/prisma";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth } from "../middleware/require-auth";
 
 export const dashboardRouter = Router();
 
@@ -50,4 +50,3 @@ dashboardRouter.get(
     });
   })
 );
-

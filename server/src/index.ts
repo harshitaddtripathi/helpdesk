@@ -2,16 +2,18 @@ import path from "node:path";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express from "express";
+import { toNodeHandler } from "better-auth/node";
 import { aiRouter } from "./routes/ai";
-import { authRouter } from "./routes/auth";
 import { categoriesRouter } from "./routes/categories";
 import { dashboardRouter } from "./routes/dashboard";
 import { emailRouter } from "./routes/email";
 import { knowledgeBaseRouter } from "./routes/knowledge-base";
 import { ticketsRouter } from "./routes/tickets";
 import { usersRouter } from "./routes/users";
+import { auth } from "./lib/auth";
 import { env } from "./lib/env";
 import { errorHandler } from "./middleware/error-handler";
+import { requireAuth } from "./middleware/require-auth";
 
 const app = express();
 
@@ -21,6 +23,7 @@ app.use(
     credentials: true
   })
 );
+app.all("/api/auth/{*any}", toNodeHandler(auth));
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 
@@ -28,7 +31,13 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-app.use("/api/auth", authRouter);
+app.get("/api/me", requireAuth, (req, res) => {
+  res.json({
+    user: req.user,
+    session: req.session
+  });
+});
+
 app.use("/api/users", usersRouter);
 app.use("/api/tickets", ticketsRouter);
 app.use("/api/categories", categoriesRouter);
@@ -50,4 +59,3 @@ app.use(errorHandler);
 app.listen(env.PORT, () => {
   console.log(`API listening on http://localhost:${env.PORT}`);
 });
-

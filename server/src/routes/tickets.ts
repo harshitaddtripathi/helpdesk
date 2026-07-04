@@ -3,7 +3,7 @@ import { MessageDirection, Prisma, TicketStatus } from "@prisma/client";
 import { z } from "zod";
 import { asyncHandler, HttpError, requireStringParam } from "../lib/http";
 import { prisma } from "../lib/prisma";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth } from "../middleware/require-auth";
 
 export const ticketsRouter = Router();
 

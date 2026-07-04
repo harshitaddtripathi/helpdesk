@@ -1,20 +1,20 @@
 import type { UserRole } from "@prisma/client";
+import type { auth } from "../lib/auth";
 
-export type AuthenticatedUser = {
-  id: string;
-  email: string;
-  name: string;
+type BetterAuthSession = typeof auth.$Infer.Session;
+
+export type AuthenticatedUser = BetterAuthSession["user"] & {
   role: UserRole;
+  active: boolean;
 };
 
 declare global {
   namespace Express {
     interface Request {
       user?: AuthenticatedUser;
-      sessionToken?: string;
+      session?: BetterAuthSession["session"];
     }
   }
 }
 
 export {};
-

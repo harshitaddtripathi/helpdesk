@@ -37,10 +37,9 @@ bun run dev
 
 Frontend: `http://localhost:5173`
 
-Backend: `http://localhost:4000`
+Backend: `http://localhost:3000`
 
 Default admin credentials come from `.env`:
 
 - Email: `SEED_ADMIN_EMAIL`
 - Password: `SEED_ADMIN_PASSWORD`
-

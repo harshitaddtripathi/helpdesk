@@ -17,7 +17,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void apiFetch<{ user: User }>("/api/auth/me")
+    void apiFetch<{ user: User }>("/api/me")
       .then((result) => {
         setUser(result.user);
       })
@@ -34,14 +34,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       loading,
       async login(email, password) {
-        const result = await apiFetch<{ user: User }>("/api/auth/login", {
+        const result = await apiFetch<{ user: User }>("/api/auth/sign-in/email", {
           method: "POST",
           body: JSON.stringify({ email, password })
         });
         setUser(result.user);
       },
       async logout() {
-        await apiFetch<void>("/api/auth/logout", { method: "POST" });
+        await apiFetch<void>("/api/auth/sign-out", { method: "POST" });
         setUser(null);
       }
     }),

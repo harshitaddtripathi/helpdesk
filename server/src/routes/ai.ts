@@ -3,7 +3,7 @@ import { z } from "zod";
 import { env } from "../lib/env";
 import { asyncHandler, HttpError } from "../lib/http";
 import { prisma } from "../lib/prisma";
-import { requireAuth } from "../middleware/auth";
+import { requireAuth } from "../middleware/require-auth";
 
 export const aiRouter = Router();
 
@@ -66,4 +66,3 @@ function ensureAiConfigured() {
     throw new HttpError(501, "CODEX_API_KEY is not configured.");
   }
 }
-

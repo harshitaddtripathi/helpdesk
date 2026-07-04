@@ -1,10 +1,10 @@
-import bcrypt from "bcryptjs";
 import { Router } from "express";
 import { UserRole } from "@prisma/client";
 import { z } from "zod";
+import { createEmailPasswordUser } from "../lib/auth";
 import { asyncHandler, HttpError, requireStringParam } from "../lib/http";
 import { prisma } from "../lib/prisma";
-import { requireAuth, requireRole } from "../middleware/auth";
+import { requireAuth, requireRole } from "../middleware/require-auth";
 
 export const usersRouter = Router();
 
@@ -44,30 +44,20 @@ usersRouter.post(
   "/",
   asyncHandler(async (req, res) => {
     const body = createAgentSchema.parse(req.body);
+    const email = body.email.toLowerCase();
     const existingUser = await prisma.user.findUnique({
-      where: { email: body.email }
+      where: { email }
     });
 
     if (existingUser) {
       throw new HttpError(409, "A user with this email already exists.");
     }
 
-    const passwordHash = await bcrypt.hash(body.password, 12);
-    const user = await prisma.user.create({
-      data: {
-        email: body.email,
-        name: body.name,
-        passwordHash,
-        role: UserRole.AGENT
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        role: true,
-        active: true,
-        createdAt: true
-      }
+    const user = await createEmailPasswordUser({
+      email,
+      name: body.name,
+      password: body.password,
+      role: UserRole.AGENT
     });
 
     res.status(201).json({ user });

@@ -7,10 +7,10 @@ A ticket management system that uses AI to classify, respond to, and route suppo
 ## Tech Stack
 
 - Frontend: React + TypeScript + Vite on port `5173`.
-- Backend: Express + TypeScript + Bun on port `4000`.
+- Backend: Express + TypeScript + Bun on port `3000`.
 - Database: PostgreSQL with Prisma ORM.
 - AI: Codex API.
-- Auth: Database sessions.
+- Auth: Better Auth email/password with database sessions.
 
 ## Project Structure
 
