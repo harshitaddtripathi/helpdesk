@@ -5,7 +5,7 @@ import { useAuth } from "../auth";
 export function LoginPage() {
   const { user, login } = useAuth();
   const [email, setEmail] = useState("admin@example.com");
-  const [password, setPassword] = useState("ChangeMe123!");
+  const [password, setPassword] = useState("password123");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -73,4 +73,3 @@ export function LoginPage() {
     </main>
   );
 }
-

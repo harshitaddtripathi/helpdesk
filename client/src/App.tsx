@@ -8,6 +8,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { TicketDetailPage } from "./pages/TicketDetailPage";
 import { TicketsPage } from "./pages/TicketsPage";
 import { UsersPage } from "./pages/UsersPage";
+import { UserRole } from "./types";
 
 export function App() {
   const [healthMessage, setHealthMessage] = useState("Checking API health...");
@@ -91,7 +92,7 @@ function Shell() {
             <NavItem to="/">Dashboard</NavItem>
             <NavItem to="/tickets">Tickets</NavItem>
             <NavItem to="/knowledge-base">Knowledge Base</NavItem>
-            {user?.role === "ADMIN" ? <NavItem to="/users">Users</NavItem> : null}
+            {user?.role === UserRole.Admin ? <NavItem to="/users">Users</NavItem> : null}
             <button
               className="rounded-md border border-slate-300 px-3 py-2 text-slate-700 hover:bg-slate-50"
               type="button"

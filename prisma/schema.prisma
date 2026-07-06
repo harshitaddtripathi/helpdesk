@@ -8,8 +8,8 @@ datasource db {
 }
 
 enum UserRole {
-  ADMIN
-  AGENT
+  admin
+  agent
 }
 
 enum TicketStatus {
@@ -35,7 +35,7 @@ model User {
   name          String
   emailVerified Boolean   @default(false)
   image         String?
-  role          UserRole  @default(AGENT)
+  role          UserRole  @default(agent)
   active        Boolean   @default(true)
   sessions      Session[]
   accounts      Account[]

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { UserRole } from "@prisma/client";
 import { z } from "zod";
+import { UserRole } from "../lib/auth";
 import { asyncHandler, HttpError } from "../lib/http";
 import { prisma } from "../lib/prisma";
 import { requireAuth, requireRole } from "../middleware/require-auth";
@@ -39,7 +39,7 @@ knowledgeBaseRouter.get(
 
 knowledgeBaseRouter.post(
   "/",
-  requireRole(UserRole.ADMIN),
+  requireRole(UserRole.admin),
   asyncHandler(async (req, res) => {
     const body = articleSchema.parse(req.body);
     const category = body.categorySlug

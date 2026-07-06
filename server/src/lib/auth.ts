@@ -1,9 +1,12 @@
-import { UserRole } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { UserRole } from "@prisma/client";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { hashPassword, verifyPassword } from "better-auth/crypto";
 import { env } from "./env";
 import { prisma } from "./prisma";
+
+export { UserRole };
 
 export const auth = betterAuth({
   appName: "AI Helpdesk",
@@ -16,19 +19,26 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    disableSignUp: true,
     autoSignIn: false,
     minPasswordLength: 8,
     password: {
-      hash: (password) => bcrypt.hash(password, 12),
-      verify: ({ hash, password }) => bcrypt.compare(password, hash)
+      hash: hashPassword,
+      verify: ({ hash, password }) => {
+        if (/^\$2[aby]\$/.test(hash)) {
+          return bcrypt.compare(password, hash);
+        }
+
+        return verifyPassword({ hash, password });
+      }
     }
   },
   user: {
     additionalFields: {
       role: {
-        type: ["ADMIN", "AGENT"],
+        type: [UserRole.admin, UserRole.agent],
         required: false,
-        defaultValue: "AGENT",
+        defaultValue: UserRole.agent,
         input: false
       },
       active: {
@@ -73,35 +83,44 @@ export async function createEmailPasswordUser({
   email,
   name,
   password,
-  role = UserRole.AGENT
+  role = UserRole.agent
 }: {
   email: string;
   name: string;
   password: string;
   role?: UserRole;
 }) {
-  const result = await auth.api.signUpEmail({
-    body: {
-      email,
-      name,
-      password
-    }
-  });
+  const passwordHash = await hashAuthPassword(password);
+  const normalizedEmail = email.toLowerCase();
 
-  const user = await prisma.user.update({
-    where: { id: result.user.id },
-    data: {
-      role,
-      active: true
-    },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      role: true,
-      active: true,
-      createdAt: true
-    }
+  const user = await prisma.$transaction(async (tx) => {
+    const createdUser = await tx.user.create({
+      data: {
+        email: normalizedEmail,
+        name,
+        role,
+        active: true
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        active: true,
+        createdAt: true
+      }
+    });
+
+    await tx.account.create({
+      data: {
+        accountId: createdUser.id,
+        providerId: "credential",
+        userId: createdUser.id,
+        password: passwordHash
+      }
+    });
+
+    return createdUser;
   });
 
   return user;

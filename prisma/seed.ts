@@ -1,49 +1,58 @@
-import { UserRole } from "@prisma/client";
-import { createEmailPasswordUser, setCredentialPassword } from "../server/src/lib/auth";
-import { prisma } from "../server/src/lib/prisma";
+import { PrismaClient, UserRole } from "@prisma/client";
+import { generateId } from "@better-auth/core/utils/id";
+import { hashPassword } from "better-auth/crypto";
 
+const prisma = new PrismaClient();
 
-const categories = [
-  { name: "General questions", slug: "general-questions" },
-  { name: "Technical questions", slug: "technical-questions" },
-  { name: "Refund request", slug: "refund-request" }
-];
+function requireEnv(name: string) {
+  const value = process.env[name]?.trim();
 
-async function main() {
-  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@example.com";
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe123!";
-
-  for (const category of categories) {
-    await prisma.category.upsert({
-      where: { slug: category.slug },
-      update: { name: category.name },
-      create: category
-    });
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
   }
 
+  return value;
+}
+
+async function main() {
+  const adminEmail = requireEnv("SEED_ADMIN_EMAIL").toLowerCase();
+  const adminPassword = requireEnv("SEED_ADMIN_PASSWORD");
+
   const existingAdmin = await prisma.user.findUnique({
-    where: { email: adminEmail.toLowerCase() }
+    where: { email: adminEmail }
   });
 
   if (existingAdmin) {
-    await prisma.user.update({
-      where: { id: existingAdmin.id },
-      data: {
-        name: "Admin",
-        role: UserRole.ADMIN,
-        active: true
-      }
-    });
-    await setCredentialPassword(existingAdmin.id, adminPassword);
+    console.log(`Admin user ${adminEmail} already exists; skipping.`);
     return;
   }
 
-  await createEmailPasswordUser({
-    email: adminEmail,
-    name: "Admin",
-    password: adminPassword,
-    role: UserRole.ADMIN
+  const userId = generateId();
+  const passwordHash = await hashPassword(adminPassword);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.create({
+      data: {
+        id: userId,
+        email: adminEmail,
+        name: "Admin",
+        role: UserRole.admin,
+        active: true
+      }
+    });
+
+    await tx.account.create({
+      data: {
+        id: generateId(),
+        accountId: userId,
+        providerId: "credential",
+        userId,
+        password: passwordHash
+      }
+    });
   });
+
+  console.log(`Created admin user ${adminEmail}.`);
 }
 
 main()

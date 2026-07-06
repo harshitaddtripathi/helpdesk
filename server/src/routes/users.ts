@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { UserRole } from "@prisma/client";
 import { z } from "zod";
+import { UserRole } from "../lib/auth";
 import { createEmailPasswordUser } from "../lib/auth";
 import { asyncHandler, HttpError, requireStringParam } from "../lib/http";
 import { prisma } from "../lib/prisma";
@@ -8,7 +8,7 @@ import { requireAuth, requireRole } from "../middleware/require-auth";
 
 export const usersRouter = Router();
 
-usersRouter.use(requireAuth, requireRole(UserRole.ADMIN));
+usersRouter.use(requireAuth, requireRole(UserRole.admin));
 
 const createAgentSchema = z.object({
   email: z.string().email(),
@@ -57,7 +57,7 @@ usersRouter.post(
       email,
       name: body.name,
       password: body.password,
-      role: UserRole.AGENT
+      role: UserRole.agent
     });
 
     res.status(201).json({ user });

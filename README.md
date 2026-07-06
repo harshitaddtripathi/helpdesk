@@ -41,5 +41,5 @@ Backend: `http://localhost:3000`
 
 Default admin credentials come from `.env`:
 
-- Email: `SEED_ADMIN_EMAIL`
-- Password: `SEED_ADMIN_PASSWORD`
+- Email: `SEED_ADMIN_EMAIL` (`admin@example.com` locally)
+- Password: `SEED_ADMIN_PASSWORD` (`password123` locally)

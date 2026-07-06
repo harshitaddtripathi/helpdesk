@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
-import { UserRole } from "@prisma/client";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../lib/auth";
+import type { UserRole } from "../lib/auth";
 import { HttpError } from "../lib/http";
 import { prisma } from "../lib/prisma";
 

@@ -1,4 +1,7 @@
-export type UserRole = "ADMIN" | "AGENT";
+export enum UserRole {
+  Admin = "admin",
+  Agent = "agent"
+}
 export type TicketStatus = "OPEN" | "RESOLVED" | "CLOSED";
 export type MessageDirection = "INBOUND" | "OUTBOUND";
 
@@ -53,4 +56,3 @@ export type DashboardData = {
   }>;
   recentTickets: Ticket[];
 };
-
