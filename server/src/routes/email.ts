@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { Router } from "express";
 import { MessageDirection } from "@prisma/client";
 import { z } from "zod";
@@ -76,12 +77,24 @@ emailRouter.post(
 );
 
 function verifyWebhookSecret(headerValue: string | string[] | undefined) {
-  if (!env.EMAIL_WEBHOOK_SECRET) return;
+  if (!env.EMAIL_WEBHOOK_SECRET) {
+    throw new HttpError(503, "Email webhook is not configured.");
+  }
 
   const value = Array.isArray(headerValue) ? headerValue[0] : headerValue;
 
-  if (value !== env.EMAIL_WEBHOOK_SECRET) {
+  if (!value || !constantTimeEquals(value, env.EMAIL_WEBHOOK_SECRET)) {
     throw new HttpError(401, "Invalid email webhook secret.");
   }
 }
 
+function constantTimeEquals(left: string, right: string) {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(leftBuffer, rightBuffer);
+}

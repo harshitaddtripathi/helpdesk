@@ -13,17 +13,25 @@ import { usersRouter } from "./routes/users";
 import { auth } from "./lib/auth";
 import { env } from "./lib/env";
 import { errorHandler } from "./middleware/error-handler";
+import { authRateLimiter } from "./middleware/rate-limit";
 import { requireAuth } from "./middleware/require-auth";
 
 const app = express();
 
 app.use(
   cors({
-    origin: env.CLIENT_ORIGIN,
+    origin(origin, callback) {
+      if (!origin || env.BETTER_AUTH_TRUSTED_ORIGINS.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(null, false);
+    },
     credentials: true
   })
 );
-app.all("/api/auth/{*any}", toNodeHandler(auth));
+app.all("/api/auth/{*any}", authRateLimiter, toNodeHandler(auth));
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 
@@ -35,6 +43,11 @@ app.get("/api/me", requireAuth, (req, res) => {
   res.json({
     user: req.user,
     session: req.session
+      ? {
+          id: req.session.id,
+          expiresAt: req.session.expiresAt
+        }
+      : null
   });
 });
 

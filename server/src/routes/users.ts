@@ -4,11 +4,11 @@ import { UserRole } from "../lib/auth";
 import { createEmailPasswordUser } from "../lib/auth";
 import { asyncHandler, HttpError, requireStringParam } from "../lib/http";
 import { prisma } from "../lib/prisma";
-import { requireAuth, requireRole } from "../middleware/require-auth";
+import { requireAdmin } from "../middleware/require-auth";
 
 export const usersRouter = Router();
 
-usersRouter.use(requireAuth, requireRole(UserRole.admin));
+usersRouter.use(requireAdmin);
 
 const createAgentSchema = z.object({
   email: z.string().email(),
@@ -69,6 +69,18 @@ usersRouter.patch(
   asyncHandler(async (req, res) => {
     const userId = requireStringParam(req.params.id, "id");
     const body = updateAgentSchema.parse(req.body);
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true }
+    });
+
+    if (!existingUser) {
+      throw new HttpError(404, "User not found.");
+    }
+
+    if (existingUser.role !== UserRole.agent) {
+      throw new HttpError(403, "Only agent accounts can be updated from this endpoint.");
+    }
 
     const user = await prisma.user.update({
       where: { id: userId },

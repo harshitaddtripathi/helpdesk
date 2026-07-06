@@ -1,7 +1,7 @@
 import type { RequestHandler } from "express";
 import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "../lib/auth";
-import type { UserRole } from "../lib/auth";
+import { UserRole } from "../lib/auth";
 import { HttpError } from "../lib/http";
 import { prisma } from "../lib/prisma";
 
@@ -59,3 +59,21 @@ export function requireRole(...roles: UserRole[]): RequestHandler {
     next();
   };
 }
+
+export const requireAdmin: RequestHandler = (req, res, next) => {
+  const checkAdmin = requireRole(UserRole.admin);
+
+  if (req.user) {
+    checkAdmin(req, res, next);
+    return;
+  }
+
+  requireAuth(req, res, (error) => {
+    if (error) {
+      next(error);
+      return;
+    }
+
+    checkAdmin(req, res, next);
+  });
+};
