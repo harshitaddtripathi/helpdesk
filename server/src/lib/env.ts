@@ -70,6 +70,22 @@ function parseOriginList(value: string | undefined, fallbackOrigin: string) {
   );
 }
 
+function addDevelopmentOrigins(origins: string[]) {
+  if (isProduction) {
+    return origins;
+  }
+
+  const trustedOrigins = new Set(origins);
+
+  for (const hostname of ["localhost", "127.0.0.1"]) {
+    for (let portNumber = 5173; portNumber <= 5179; portNumber += 1) {
+      trustedOrigins.add(`http://${hostname}:${portNumber}`);
+    }
+  }
+
+  return [...trustedOrigins];
+}
+
 const nodeEnv = readEnv("NODE_ENV") ?? "development";
 const isProduction = nodeEnv === "production";
 const port = Number(readEnv("PORT") ?? 3000);
@@ -103,9 +119,8 @@ export const env = {
   PORT: port,
   DATABASE_URL: requireEnv("DATABASE_URL"),
   CLIENT_ORIGIN: clientOrigin,
-  BETTER_AUTH_TRUSTED_ORIGINS: parseOriginList(
-    readEnv("BETTER_AUTH_TRUSTED_ORIGINS"),
-    clientOrigin
+  BETTER_AUTH_TRUSTED_ORIGINS: addDevelopmentOrigins(
+    parseOriginList(readEnv("BETTER_AUTH_TRUSTED_ORIGINS"), clientOrigin)
   ),
   BETTER_AUTH_URL: requireUrl("BETTER_AUTH_URL", isProduction ? undefined : `http://localhost:${port}`),
   BETTER_AUTH_SECRET: requireSecret("BETTER_AUTH_SECRET"),

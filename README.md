@@ -43,3 +43,27 @@ Default admin credentials come from `.env`:
 
 - Email: `SEED_ADMIN_EMAIL` (`admin@example.com` locally)
 - Password: `SEED_ADMIN_PASSWORD` (`password123` locally)
+
+## Playwright setup
+
+Playwright is configured to use a separate PostgreSQL database on port `5433`.
+
+1. Start the test database:
+
+```sh
+docker compose up -d postgres-test
+```
+
+2. Install browser binaries when needed:
+
+```sh
+bunx playwright install chromium
+```
+
+3. Run future end-to-end tests:
+
+```sh
+bun run test:e2e
+```
+
+The Playwright global setup loads `server/.env.test`, resets and seeds the test database, serves the API on `http://localhost:3001`, and serves Vite on `http://localhost:5174`.

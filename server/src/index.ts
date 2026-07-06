@@ -39,6 +39,10 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 app.get("/api/me", requireAuth, (req, res) => {
   res.json({
     user: req.user,

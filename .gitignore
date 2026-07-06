@@ -3,7 +3,9 @@ dist
 .env
 .env.*
 !.env.example
+!server/.env.test
+e2e/test-results/
+playwright-report/
 *.log
 .DS_Store
 bun.lockb
-

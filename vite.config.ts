@@ -2,14 +2,18 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
+const vitePort = Number(process.env.VITE_PORT ?? 5173);
+const apiProxyTarget = process.env.VITE_API_URL ?? "http://localhost:3000";
+
 export default defineConfig({
   root: "client",
   plugins: [react(), tailwindcss()],
   server: {
-    port: 5173,
+    port: vitePort,
+    strictPort: process.env.NODE_ENV === "test" || process.env.CI === "true",
     proxy: {
-      "/health": "http://localhost:3000",
-      "/api": "http://localhost:3000"
+      "/health": apiProxyTarget,
+      "/api": apiProxyTarget
     }
   },
   build: {
