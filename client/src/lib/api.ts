@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
 type ApiOptions = RequestInit & {
   body?: BodyInit | null;
@@ -28,4 +28,3 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
 
   return response.json() as Promise<T>;
 }
-

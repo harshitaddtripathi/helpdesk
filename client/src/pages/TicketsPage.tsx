@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 import { apiFetch } from "../lib/api";
 import type { Category, Ticket } from "../types";
 
@@ -118,4 +118,3 @@ export function TicketsPage() {
     </div>
   );
 }
-

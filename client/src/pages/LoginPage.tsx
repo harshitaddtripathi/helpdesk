@@ -1,15 +1,24 @@
 import { FormEvent, useState } from "react";
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../auth";
+import { Navigate, useNavigate } from "react-router";
+import { signIn, useSession } from "../lib/auth-client";
 
 export function LoginPage() {
-  const { user, login } = useAuth();
-  const [email, setEmail] = useState("admin@example.com");
-  const [password, setPassword] = useState("password123");
+  const navigate = useNavigate();
+  const { data: session, isPending, refetch } = useSession();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  if (user) {
+  if (isPending) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+        <p className="text-sm text-slate-600">Loading...</p>
+      </main>
+    );
+  }
+
+  if (session) {
     return <Navigate to="/" replace />;
   }
 
@@ -19,7 +28,18 @@ export function LoginPage() {
     setSubmitting(true);
 
     try {
-      await login(email, password);
+      const result = await signIn.email({
+        email: email.trim(),
+        password
+      });
+
+      if (result.error) {
+        setError(result.error.message ?? "Login failed.");
+        return;
+      }
+
+      await refetch();
+      navigate("/", { replace: true });
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : "Login failed.");
     } finally {
@@ -46,6 +66,7 @@ export function LoginPage() {
             onChange={(event) => setEmail(event.target.value)}
             type="email"
             autoComplete="email"
+            required
           />
         </label>
 
@@ -57,6 +78,7 @@ export function LoginPage() {
             onChange={(event) => setPassword(event.target.value)}
             type="password"
             autoComplete="current-password"
+            required
           />
         </label>
 

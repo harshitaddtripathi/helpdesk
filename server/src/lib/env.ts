@@ -1,7 +1,21 @@
+function parseOriginList(value: string | undefined) {
+  return (
+    value
+      ?.split(",")
+      .map((origin) => origin.trim())
+      .filter(Boolean) ?? []
+  );
+}
+
+const clientOrigin = process.env.CLIENT_ORIGIN ?? "http://localhost:5173";
+
 export const env = {
   NODE_ENV: process.env.NODE_ENV ?? "development",
   PORT: Number(process.env.PORT ?? 3000),
-  CLIENT_ORIGIN: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
+  CLIENT_ORIGIN: clientOrigin,
+  BETTER_AUTH_TRUSTED_ORIGINS: parseOriginList(
+    process.env.BETTER_AUTH_TRUSTED_ORIGINS ?? clientOrigin
+  ),
   BETTER_AUTH_URL: process.env.BETTER_AUTH_URL ?? `http://localhost:${process.env.PORT ?? 3000}`,
   BETTER_AUTH_SECRET:
     process.env.BETTER_AUTH_SECRET ??

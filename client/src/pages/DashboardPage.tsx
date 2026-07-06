@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { apiFetch } from "../lib/api";
 import type { DashboardData } from "../types";
 
@@ -84,4 +84,3 @@ function Metric({ label, value, to }: { label: string; value: number; to: string
     </Link>
   );
 }
-

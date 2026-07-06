@@ -1,6 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
-import { apiFetch } from "./lib/api";
+import { authClient } from "./lib/auth-client";
 import type { User } from "./types";
 
 type AuthContextValue = {
@@ -13,42 +13,64 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: session,
+    isPending,
+    refetch
+  } = authClient.useSession();
 
-  useEffect(() => {
-    void apiFetch<{ user: User }>("/api/me")
-      .then((result) => {
-        setUser(result.user);
-      })
-      .catch(() => {
-        setUser(null);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
+  const user = useMemo(() => mapSessionUser(session?.user), [session?.user]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
-      loading,
+      loading: isPending,
       async login(email, password) {
-        const result = await apiFetch<{ user: User }>("/api/auth/sign-in/email", {
-          method: "POST",
-          body: JSON.stringify({ email, password })
+        const result = await authClient.signIn.email({
+          email,
+          password
         });
-        setUser(result.user);
+
+        if (result.error) {
+          throw new Error(result.error.message ?? "Login failed.");
+        }
+
+        await refetch();
       },
       async logout() {
-        await apiFetch<void>("/api/auth/sign-out", { method: "POST" });
-        setUser(null);
+        const result = await authClient.signOut();
+
+        if (result.error) {
+          throw new Error(result.error.message ?? "Sign out failed.");
+        }
+
+        await refetch();
       }
     }),
-    [loading, user]
+    [isPending, refetch, user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+function mapSessionUser(sessionUser: unknown): User | null {
+  if (!sessionUser || typeof sessionUser !== "object") {
+    return null;
+  }
+
+  const user = sessionUser as Partial<User>;
+
+  if (!user.id || !user.email || !user.name || !user.role) {
+    return null;
+  }
+
+  return {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    active: user.active
+  };
 }
 
 export function useAuth() {
