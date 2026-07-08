@@ -13,6 +13,10 @@ export type User = {
   active?: boolean;
 };
 
+export type UserListItem = User & {
+  createdAt: string;
+};
+
 export type Category = {
   id: string;
   name: string;

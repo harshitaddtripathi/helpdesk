@@ -1,0 +1,8 @@
+{
+  "name": "ai-helpdesk-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --env-file=../.env --watch src/index.ts"
+  }
+}

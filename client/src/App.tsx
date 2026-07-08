@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router";
+import { AdminRoute } from "./components/AdminRoute";
 import { Layout } from "./components/Layout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { HomePage } from "./pages/HomePage";
@@ -18,7 +19,9 @@ export function App() {
           <Route path="tickets" element={<TicketsPage />} />
           <Route path="tickets/:ticketId" element={<TicketDetailPage />} />
           <Route path="knowledge-base" element={<KnowledgeBasePage />} />
-          <Route path="users" element={<UsersPage />} />
+          <Route element={<AdminRoute />}>
+            <Route path="users" element={<UsersPage />} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

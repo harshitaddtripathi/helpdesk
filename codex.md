@@ -45,6 +45,7 @@ The client proxies `/api/*` requests to the server via `vite.config.ts`.
 - Use Bun as the runtime and package manager.
 - Keep API routes under `/api/*`.
 - Use Prisma for database access and migrations.
+- In the React client, use Axios for HTTP requests and TanStack Query for server-state fetching, caching, mutations, and invalidation. Avoid adding new raw `fetch` calls for API data unless there is a specific reason.
 - Auth rate limiting is enabled only in production. Development and test environments bypass the auth rate limiter.
 - Use the `$e2e-test-writer` project agent when writing, updating, or debugging Playwright E2E tests.
 

@@ -22,16 +22,22 @@
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@prisma/client": "^6.0.0",
+    "@tanstack/react-query": "^5.101.2",
+    "axios": "^1.18.1",
     "bcryptjs": "^2.4.3",
     "better-auth": "^1.6.23",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "express": "^5.0.0",
+    "lucide-react": "^1.23.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.81.0",
     "react-router": "^8.1.0",
     "react-router-dom": "^7.0.0",
+    "tailwind-merge": "^3.6.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
