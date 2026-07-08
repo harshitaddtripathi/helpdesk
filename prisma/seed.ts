@@ -4,6 +4,13 @@ import { hashPassword } from "better-auth/crypto";
 
 const prisma = new PrismaClient();
 
+type SeedUser = {
+  email: string;
+  name: string;
+  password: string;
+  role: UserRole;
+};
+
 function requireEnv(name: string) {
   const value = process.env[name]?.trim();
 
@@ -14,29 +21,58 @@ function requireEnv(name: string) {
   return value;
 }
 
-async function main() {
-  const adminEmail = requireEnv("SEED_ADMIN_EMAIL").toLowerCase();
-  const adminPassword = requireEnv("SEED_ADMIN_PASSWORD");
-
-  const existingAdmin = await prisma.user.findUnique({
-    where: { email: adminEmail }
+async function ensureSeedUser({ email, name, password, role }: SeedUser) {
+  const normalizedEmail = email.toLowerCase();
+  const existingUser = await prisma.user.findUnique({
+    where: { email: normalizedEmail }
   });
+  const passwordHash = await hashPassword(password);
 
-  if (existingAdmin) {
-    console.log(`Admin user ${adminEmail} already exists; skipping.`);
+  if (existingUser) {
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: existingUser.id },
+        data: {
+          name,
+          role,
+          active: true
+        }
+      });
+
+      await tx.account.upsert({
+        where: {
+          providerId_accountId: {
+            providerId: "credential",
+            accountId: existingUser.id
+          }
+        },
+        update: {
+          password: passwordHash,
+          userId: existingUser.id
+        },
+        create: {
+          id: generateId(),
+          accountId: existingUser.id,
+          providerId: "credential",
+          userId: existingUser.id,
+          password: passwordHash
+        }
+      });
+    });
+
+    console.log(`Seed user ${normalizedEmail} already exists; updated.`);
     return;
   }
 
   const userId = generateId();
-  const passwordHash = await hashPassword(adminPassword);
 
   await prisma.$transaction(async (tx) => {
     await tx.user.create({
       data: {
         id: userId,
-        email: adminEmail,
-        name: "Admin",
-        role: UserRole.admin,
+        email: normalizedEmail,
+        name,
+        role,
         active: true
       }
     });
@@ -52,7 +88,44 @@ async function main() {
     });
   });
 
-  console.log(`Created admin user ${adminEmail}.`);
+  console.log(`Created seed user ${normalizedEmail}.`);
+}
+
+async function main() {
+  const adminEmail = requireEnv("SEED_ADMIN_EMAIL").toLowerCase();
+  const adminPassword = requireEnv("SEED_ADMIN_PASSWORD");
+  const agentPassword = process.env.SEED_AGENT_PASSWORD?.trim() || adminPassword;
+
+  const seedUsers: SeedUser[] = [
+    {
+      email: adminEmail,
+      name: "Admin",
+      password: adminPassword,
+      role: UserRole.admin
+    },
+    {
+      email: "alex.agent@example.com",
+      name: "Alex Morgan",
+      password: agentPassword,
+      role: UserRole.agent
+    },
+    {
+      email: "jordan.agent@example.com",
+      name: "Jordan Lee",
+      password: agentPassword,
+      role: UserRole.agent
+    },
+    {
+      email: "priya.agent@example.com",
+      name: "Priya Shah",
+      password: agentPassword,
+      role: UserRole.agent
+    }
+  ];
+
+  for (const seedUser of seedUsers) {
+    await ensureSeedUser(seedUser);
+  }
 }
 
 main()

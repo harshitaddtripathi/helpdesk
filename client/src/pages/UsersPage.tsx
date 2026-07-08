@@ -79,8 +79,14 @@ export function UsersPage() {
       <h1 className="mb-6 text-2xl font-bold">Users</h1>
 
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-        <form className="rounded-lg border border-slate-200 bg-white p-4" onSubmit={handleCreate}>
-          <h2 className="text-lg font-semibold text-slate-950">Create Agent</h2>
+        <form
+          aria-labelledby="create-agent-heading"
+          className="rounded-lg border border-slate-200 bg-white p-4"
+          onSubmit={handleCreate}
+        >
+          <h2 className="text-lg font-semibold text-slate-950" id="create-agent-heading">
+            Create Agent
+          </h2>
 
           <label className="mt-4 block text-sm font-medium text-slate-700">
             Name
@@ -193,7 +199,7 @@ function UsersTableSkeleton() {
       </TableHeader>
       <TableBody>
         {Array.from({ length: 4 }, (_, index) => (
-          <TableRow key={index}>
+          <TableRow data-testid="user-row-skeleton" key={index}>
             <TableCell>
               <Skeleton className="h-4 w-32" />
             </TableCell>

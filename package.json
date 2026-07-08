@@ -11,6 +11,7 @@
     "build:client": "vite build",
     "build:server": "bun build server/src/index.ts --target=bun --outdir dist/server --external @prisma/client",
     "start": "bun run scripts/start.ts",
+    "test:component": "vitest run",
     "test:e2e": "playwright test --pass-with-no-tests",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
@@ -43,6 +44,9 @@
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@tailwindcss/vite": "^4.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/bun": "^1.2.0",
     "@types/cookie-parser": "^1.4.8",
@@ -52,9 +56,11 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",
     "dotenv": "^17.4.2",
+    "jsdom": "^29.1.1",
     "prisma": "^6.0.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.8.0",
-    "vite": "^7.0.0"
+    "vite": "^7.0.0",
+    "vitest": "^4.1.10"
   }
 }

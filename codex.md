@@ -35,6 +35,12 @@ bun run dev:web
 
 # Run Playwright E2E setup/tests
 bun run test:e2e
+
+# Run component tests once
+bun run test:component
+
+# Watch component tests while developing frontend tests
+cd client && bun run test:component
 ```
 
 The client proxies `/api/*` requests to the server via `vite.config.ts`.
@@ -46,6 +52,8 @@ The client proxies `/api/*` requests to the server via `vite.config.ts`.
 - Keep API routes under `/api/*`.
 - Use Prisma for database access and migrations.
 - In the React client, use Axios for HTTP requests and TanStack Query for server-state fetching, caching, mutations, and invalidation. Avoid adding new raw `fetch` calls for API data unless there is a specific reason.
+- Write React component tests with Vitest and React Testing Library. Keep tests close to the component or page under test, use user-facing queries where practical, and use `client/src/test/render-with-query.tsx` for components that depend on TanStack Query.
+- Run `bun run test:component` from the repo root before finishing component-test changes. Use `cd client && bun run test:component` for Vitest watch mode while writing tests.
 - Auth rate limiting is enabled only in production. Development and test environments bypass the auth rate limiter.
 - Use the `$e2e-test-writer` project agent when writing, updating, or debugging Playwright E2E tests.
 
