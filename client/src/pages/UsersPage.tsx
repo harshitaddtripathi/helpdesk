@@ -18,7 +18,8 @@ export function UsersPage() {
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
 
     try {
       await apiFetch("/api/users", {
@@ -29,7 +30,7 @@ export function UsersPage() {
           password: formData.get("password")
         })
       });
-      event.currentTarget.reset();
+      form.reset();
       await loadUsers();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Failed to create user.");
@@ -91,4 +92,3 @@ export function UsersPage() {
     </div>
   );
 }
-
