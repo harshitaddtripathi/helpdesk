@@ -1,10 +1,10 @@
 import { FormEvent, useState } from "react";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
 import { apiFetch } from "../lib/api";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Badge } from "../components/ui/badge";
+import { Skeleton } from "../components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -129,10 +129,7 @@ export function UsersPage() {
 
         <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
           {usersQuery.isPending ? (
-            <div className="flex items-center gap-2 px-4 py-6 text-sm text-slate-500">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading users...
-            </div>
+            <UsersTableSkeleton />
           ) : usersQuery.isError ? (
             <div className="p-4">
               <Alert variant="destructive">
@@ -180,5 +177,38 @@ export function UsersPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function UsersTableSkeleton() {
+  return (
+    <Table aria-label="Loading users">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Role</TableHead>
+          <TableHead>Created</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {Array.from({ length: 4 }, (_, index) => (
+          <TableRow key={index}>
+            <TableCell>
+              <Skeleton className="h-4 w-32" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-52" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-6 w-16" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-4 w-24" />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }

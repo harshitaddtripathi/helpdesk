@@ -32,7 +32,9 @@ export function Layout() {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div>
-            <h1 className="text-lg font-semibold text-slate-950">AI Helpdesk</h1>
+            <NavLink className="text-lg font-semibold text-slate-950" to="/">
+              AI Helpdesk
+            </NavLink>
             <p className="text-sm text-slate-500">{session?.user.name}</p>
           </div>
           <nav className="flex items-center gap-2 text-sm" aria-label="Primary">
