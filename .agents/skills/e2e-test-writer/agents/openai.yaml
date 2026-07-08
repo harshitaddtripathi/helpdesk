@@ -1,0 +1,7 @@
+interface:
+  display_name: "E2E Test Writer"
+  short_description: "Write Playwright E2E tests for Helpdesk"
+  default_prompt: "Use $e2e-test-writer to add or update Playwright E2E tests for this Helpdesk app."
+
+policy:
+  allow_implicit_invocation: true

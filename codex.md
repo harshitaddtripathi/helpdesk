@@ -39,16 +39,6 @@ bun run test:e2e
 
 The client proxies `/api/*` requests to the server via `vite.config.ts`.
 
-## E2E Testing
-
-- Root `package.json` owns Playwright scripts: `test:e2e`, `test:e2e:ui`, and `test:e2e:headed`.
-- Playwright tests live under `e2e/tests`; the directory may intentionally contain only `.gitkeep`.
-- `bun run test:e2e` uses `--pass-with-no-tests` so an empty E2E scaffold exits successfully after global setup.
-- `e2e/global-setup.ts` loads `server/.env.test` and runs `bunx prisma migrate reset --force --skip-generate --config ../prisma.config.ts` from `server/`.
-- `server/.env.test` is committed and contains only test-safe values. It points at `helpdesk_test` on `127.0.0.1:5433`, API port `3001`, and client origin `http://localhost:5174`.
-- The Playwright config starts the API with `bun run --cwd server src/index.ts` and the client with `bun run --cwd client vite --port 5174`.
-- With no tests discovered, Playwright does not launch `webServer` entries; add a real or temporary test when verifying server/client startup.
-
 ## Key Conventions
 
 - Use TypeScript throughout.
@@ -56,6 +46,7 @@ The client proxies `/api/*` requests to the server via `vite.config.ts`.
 - Keep API routes under `/api/*`.
 - Use Prisma for database access and migrations.
 - Auth rate limiting is enabled only in production. Development and test environments bypass the auth rate limiter.
+- Use the `$e2e-test-writer` project agent when writing, updating, or debugging Playwright E2E tests.
 
 ## Documentation
 
