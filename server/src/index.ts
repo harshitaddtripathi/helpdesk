@@ -31,7 +31,11 @@ app.use(
     credentials: true
   })
 );
-app.all("/api/auth/{*any}", authRateLimiter, toNodeHandler(auth));
+if (env.NODE_ENV === "production") {
+  app.all("/api/auth/{*any}", authRateLimiter, toNodeHandler(auth));
+} else {
+  app.all("/api/auth/{*any}", toNodeHandler(auth));
+}
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 

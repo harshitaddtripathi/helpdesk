@@ -38,7 +38,7 @@ export default defineConfig({
     },
     {
       name: "client",
-      command: "bun run vite --host 0.0.0.0 --port 5174 --strictPort",
+      command: "bun run --cwd client vite --host 0.0.0.0 --port 5174 --strictPort",
       url: baseURL,
       reuseExistingServer: !process.env.CI,
       timeout: 120_000,
