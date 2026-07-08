@@ -12,11 +12,8 @@ import { ticketsRouter } from "./routes/tickets";
 import { usersRouter } from "./routes/users";
 import { auth } from "./lib/auth";
 import { env } from "./lib/env";
-import { asyncHandler } from "./lib/http";
-import { prisma } from "./lib/prisma";
 import { errorHandler } from "./middleware/error-handler";
 import { authRateLimiter } from "./middleware/rate-limit";
-import { requireAdmin } from "./middleware/require-admin";
 import { requireAuth } from "./middleware/require-auth";
 
 const app = express();
@@ -61,26 +58,6 @@ app.get("/api/me", requireAuth, (req, res) => {
       : null
   });
 });
-
-app.get(
-  "/api/users",
-  requireAuth,
-  requireAdmin,
-  asyncHandler(async (_req, res) => {
-    const users = await prisma.user.findMany({
-      orderBy: { createdAt: "asc" },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true
-      }
-    });
-
-    res.json({ users });
-  })
-);
 
 app.use("/api/users", usersRouter);
 app.use("/api/tickets", ticketsRouter);

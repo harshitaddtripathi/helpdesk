@@ -10,7 +10,11 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "baseUrl": ".",
+    "paths": {
+      "core": ["core/src/index.ts"],
+      "core/*": ["core/src/*"]
+    }
   }
 }
-

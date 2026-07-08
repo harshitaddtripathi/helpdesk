@@ -51,6 +51,9 @@ The client proxies `/api/*` requests to the server via `vite.config.ts`.
 - Use Bun as the runtime and package manager.
 - Keep API routes under `/api/*`.
 - Use Prisma for database access and migrations.
+- Define shared Zod schemas in the `core` package and import them into both client and server code instead of duplicating validation rules. Keep user-related endpoints in `server/src/routes/users.ts`.
+- Use React Hook Form with Zod schemas and `zodResolver` for client-side add-user form validation.
+- Use the Prisma `UserRole` enum for role assignments and comparisons in server code; do not hardcode role string literals such as `"agent"` or `"admin"` when implementing authorization or user creation.
 - In the React client, use Axios for HTTP requests and TanStack Query for server-state fetching, caching, mutations, and invalidation. Avoid adding new raw `fetch` calls for API data unless there is a specific reason.
 - Write React component tests with Vitest and React Testing Library. Keep tests close to the component or page under test, use user-facing queries where practical, and use `client/src/test/render-with-query.tsx` for components that depend on TanStack Query.
 - Run `bun run test:component` from the repo root before finishing component-test changes. Use `cd client && bun run test:component` for Vitest watch mode while writing tests.

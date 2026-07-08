@@ -72,6 +72,21 @@ describe("UsersPage", () => {
     expect(axiosMock.get).toHaveBeenCalledWith("/api/users", { withCredentials: true });
   });
 
+  it("prevents the create-agent form from requesting saved credentials", () => {
+    axiosMock.get.mockReturnValue(new Promise(() => undefined));
+
+    renderWithQuery(<UsersPage />);
+
+    expect(screen.getByRole("form", { name: "Create Agent" })).toHaveAttribute(
+      "autocomplete",
+      "off"
+    );
+    expect(screen.getByLabelText("Email")).toHaveAttribute("autocomplete", "off");
+    expect(screen.getByLabelText("Email")).toHaveAttribute("name", "agentEmail");
+    expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "new-password");
+    expect(screen.getByLabelText("Password")).toHaveAttribute("name", "agentPassword");
+  });
+
   it("shows an error alert when users cannot be loaded", async () => {
     axiosMock.get.mockRejectedValue({
       isAxiosError: true,
@@ -125,6 +140,26 @@ describe("UsersPage", () => {
 
     expect(await screen.findByText("new-agent@example.com")).toBeInTheDocument();
     expect(axiosMock.get).toHaveBeenCalledTimes(2);
+  });
+
+  it("validates create-agent values before submitting", async () => {
+    axiosMock.get.mockResolvedValue({ data: { users } });
+
+    renderWithQuery(<UsersPage />);
+
+    await screen.findByText("Admin User");
+
+    await userEvent.type(screen.getByLabelText("Name"), "Al");
+    await userEvent.type(screen.getByLabelText("Email"), "not-an-email");
+    await userEvent.type(screen.getByLabelText("Password"), "short");
+    await userEvent.click(screen.getByRole("button", { name: "Create agent" }));
+
+    const form = screen.getByRole("form", { name: "Create Agent" });
+
+    expect(await within(form).findByText("Name must be at least 3 letters.")).toBeInTheDocument();
+    expect(within(form).getByText("Enter a valid email address.")).toBeInTheDocument();
+    expect(within(form).getByText("Password must be at least 8 letters.")).toBeInTheDocument();
+    expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
   it("shows a form error when creating an agent fails", async () => {

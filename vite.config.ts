@@ -1,5 +1,6 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vitest/config";
 
 const vitePort = Number(process.env.VITE_PORT ?? 5173);
@@ -8,6 +9,11 @@ const apiProxyTarget = process.env.VITE_API_URL || "http://localhost:3000";
 export default defineConfig({
   root: "client",
   plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      core: fileURLToPath(new URL("./core/src/index.ts", import.meta.url))
+    }
+  },
   server: {
     port: vitePort,
     strictPort: process.env.NODE_ENV === "test" || process.env.CI === "true",

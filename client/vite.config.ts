@@ -1,11 +1,17 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vitest/config";
 
 const apiProxyTarget = process.env.VITE_API_URL || "http://localhost:3000";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      core: fileURLToPath(new URL("../core/src/index.ts", import.meta.url))
+    }
+  },
   server: {
     proxy: {
       "/health": apiProxyTarget,

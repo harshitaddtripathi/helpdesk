@@ -1,35 +1,24 @@
 import { Router } from "express";
-import { z } from "zod";
-import { UserRole } from "../lib/auth";
+import { UserRole } from "@prisma/client";
+import { createUserSchema, updateAgentSchema } from "core";
 import { createEmailPasswordUser } from "../lib/auth";
 import { asyncHandler, HttpError, requireStringParam } from "../lib/http";
 import { prisma } from "../lib/prisma";
-import { requireAdmin } from "../middleware/require-auth";
+import { requireAdmin } from "../middleware/require-admin";
 
 export const usersRouter = Router();
 
 usersRouter.use(requireAdmin);
 
-const createAgentSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(1),
-  password: z.string().min(8)
-});
-
-const updateAgentSchema = z.object({
-  name: z.string().min(1).optional(),
-  active: z.boolean().optional()
-});
-
 usersRouter.get(
   "/",
   asyncHandler(async (_req, res) => {
     const users = await prisma.user.findMany({
-      orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "asc" },
       select: {
         id: true,
-        email: true,
         name: true,
+        email: true,
         role: true,
         active: true,
         createdAt: true
@@ -43,7 +32,7 @@ usersRouter.get(
 usersRouter.post(
   "/",
   asyncHandler(async (req, res) => {
-    const body = createAgentSchema.parse(req.body);
+    const body = createUserSchema.parse(req.body);
     const email = body.email.toLowerCase();
     const existingUser = await prisma.user.findUnique({
       where: { email }
