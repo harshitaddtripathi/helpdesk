@@ -38,8 +38,8 @@ export function Layout() {
             <p className="text-sm text-slate-500">{session?.user.name}</p>
           </div>
           <nav className="flex items-center gap-2 text-sm" aria-label="Primary">
-            <NavItem to="/">Dashboard</NavItem>
             <NavItem to="/tickets">Tickets</NavItem>
+            <NavItem to="/">Dashboard</NavItem>
             <NavItem to="/knowledge-base">Knowledge Base</NavItem>
             {userRole === UserRole.Admin ? <NavItem to="/users">Users</NavItem> : null}
             <button

@@ -32,40 +32,26 @@ const replySchema = z.object({
 
 ticketsRouter.get(
   "/",
-  asyncHandler(async (req, res) => {
-    const where: Prisma.TicketWhereInput = {};
-    const status = typeof req.query.status === "string" ? req.query.status : "";
-    const category = typeof req.query.category === "string" ? req.query.category : "";
-    const search = typeof req.query.search === "string" ? req.query.search : "";
-
-    const parsedStatus = status ? statusSchema.safeParse(status) : null;
-    if (parsedStatus?.success) {
-      where.status = parsedStatus.data;
-    }
-
-    if (category) {
-      where.category = { slug: category };
-    }
-
-    if (search) {
-      where.OR = [
-        { subject: { contains: search, mode: "insensitive" } },
-        { senderEmail: { contains: search, mode: "insensitive" } },
-        { messages: { some: { bodyText: { contains: search, mode: "insensitive" } } } }
-      ];
-    }
-
-    const sortField = req.query.sort === "updatedAt" ? "updatedAt" : "createdAt";
-    const sortDirection = req.query.direction === "asc" ? "asc" : "desc";
-
+  asyncHandler(async (_req, res) => {
     const tickets = await prisma.ticket.findMany({
-      where,
       orderBy: {
-        [sortField]: sortDirection
+        createdAt: "desc"
       },
-      include: {
-        category: true,
-        _count: { select: { messages: true } }
+      select: {
+        id: true,
+        subject: true,
+        senderName: true,
+        senderEmail: true,
+        status: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true
+          }
+        },
+        createdAt: true,
+        updatedAt: true
       }
     });
 
