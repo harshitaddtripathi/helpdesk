@@ -19,15 +19,21 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
       return;
     }
 
+    if (authSession.user.deletedAt) {
+      res.status(401).json({ message: "Session is invalid or expired." });
+      return;
+    }
+
     const appUser = await prisma.user.findUnique({
       where: { id: authSession.user.id },
       select: {
         role: true,
-        active: true
+        active: true,
+        deletedAt: true
       }
     });
 
-    if (!appUser?.active) {
+    if (!appUser?.active || appUser.deletedAt) {
       res.status(401).json({ message: "Session is invalid or expired." });
       return;
     }
@@ -36,7 +42,8 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     req.user = {
       ...authSession.user,
       role: appUser.role,
-      active: appUser.active
+      active: appUser.active,
+      deletedAt: appUser.deletedAt
     };
     next();
   } catch (error) {

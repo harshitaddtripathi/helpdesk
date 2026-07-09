@@ -1,4 +1,4 @@
-import { Pencil } from "lucide-react";
+import { Pencil, Trash2 } from "lucide-react";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Skeleton } from "../ui/skeleton";
@@ -17,11 +17,19 @@ type UsersTableProps = {
   error: unknown;
   isError: boolean;
   isLoading: boolean;
+  onDelete: (user: UserListItem) => void;
   onEditUser: (user: UserListItem) => void;
   users: UserListItem[];
 };
 
-export function UsersTable({ error, isError, isLoading, onEditUser, users }: UsersTableProps) {
+export function UsersTable({
+  error,
+  isError,
+  isLoading,
+  onDelete,
+  onEditUser,
+  users
+}: UsersTableProps) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       {isLoading ? (
@@ -64,15 +72,28 @@ export function UsersTable({ error, isError, isLoading, onEditUser, users }: Use
                     {new Date(user.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">
-                    <button
-                      aria-label={`Edit ${user.name}`}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-950"
-                      onClick={() => onEditUser(user)}
-                      title={`Edit ${user.name}`}
-                      type="button"
-                    >
-                      <Pencil aria-hidden="true" className="h-4 w-4" />
-                    </button>
+                    <div className="inline-flex items-center gap-2">
+                      <button
+                        aria-label={`Edit ${user.name}`}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                        onClick={() => onEditUser(user)}
+                        title={`Edit ${user.name}`}
+                        type="button"
+                      >
+                        <Pencil aria-hidden="true" className="h-4 w-4" />
+                      </button>
+                      {user.role !== UserRole.Admin ? (
+                        <button
+                          aria-label={`Delete ${user.name}`}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                          onClick={() => onDelete(user)}
+                          title={`Delete ${user.name}`}
+                          type="button"
+                        >
+                          <Trash2 aria-hidden="true" className="h-4 w-4" />
+                        </button>
+                      ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

@@ -6,6 +6,7 @@ type BetterAuthSession = typeof auth.$Infer.Session;
 export type AuthenticatedUser = BetterAuthSession["user"] & {
   role: UserRole;
   active: boolean;
+  deletedAt: Date | null;
 };
 
 declare global {

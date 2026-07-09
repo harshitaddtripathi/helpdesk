@@ -9,6 +9,7 @@ import { UsersPage } from "./UsersPage";
 
 vi.mock("axios", () => {
   const axiosMock = {
+    delete: vi.fn(),
     get: vi.fn(),
     isAxiosError: vi.fn((error: unknown) => {
       return Boolean(error && typeof error === "object" && "isAxiosError" in error);
@@ -52,6 +53,11 @@ async function openEditAgentDialog(userName = "Agent User") {
   return screen.findByRole("dialog", { name: "Edit Agent" });
 }
 
+async function openDeleteUserDialog(userName = "Agent User") {
+  await userEvent.click(await screen.findByRole("button", { name: `Delete ${userName}` }));
+  return screen.findByRole("alertdialog", { name: "Delete User" });
+}
+
 afterEach(() => {
   vi.clearAllMocks();
 });
@@ -82,6 +88,74 @@ describe("UsersPage", () => {
     expect(screen.getByRole("button", { name: "Edit Admin User" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Edit Agent User" })).toBeInTheDocument();
     expect(axiosMock.get).toHaveBeenCalledWith("/api/users", { withCredentials: true });
+  });
+
+  it("shows delete buttons for agents but hides them for admins", async () => {
+    axiosMock.get.mockResolvedValue({ data: { users } });
+
+    renderWithQuery(<UsersPage />);
+
+    expect(await screen.findByRole("button", { name: "Delete Agent User" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Delete Admin User" })).not.toBeInTheDocument();
+  });
+
+  it("opens a delete confirmation dialog with the selected user name", async () => {
+    axiosMock.get.mockResolvedValue({ data: { users } });
+
+    renderWithQuery(<UsersPage />);
+
+    const dialog = await openDeleteUserDialog();
+
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByText(/Are you sure you want to delete Agent User\?/)).toBeInTheDocument();
+  });
+
+  it("closes the delete confirmation dialog without calling the API when canceled", async () => {
+    axiosMock.get.mockResolvedValue({ data: { users } });
+
+    renderWithQuery(<UsersPage />);
+
+    const dialog = await openDeleteUserDialog();
+
+    await userEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    expect(screen.queryByRole("alertdialog", { name: "Delete User" })).not.toBeInTheDocument();
+    expect(axiosMock.delete).not.toHaveBeenCalled();
+  });
+
+  it("calls the delete API with the selected user URL when confirmed", async () => {
+    axiosMock.get.mockResolvedValue({ data: { users } });
+    axiosMock.delete.mockResolvedValue({});
+
+    renderWithQuery(<UsersPage />);
+
+    const dialog = await openDeleteUserDialog();
+
+    await userEvent.click(within(dialog).getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => {
+      expect(axiosMock.delete).toHaveBeenCalledWith("/api/users/user-agent");
+    });
+  });
+
+  it("refreshes the users list after successful deletion", async () => {
+    const updatedUsers = users.filter((user) => user.id !== "user-agent");
+
+    axiosMock.get
+      .mockResolvedValueOnce({ data: { users } })
+      .mockResolvedValueOnce({ data: { users: updatedUsers } });
+    axiosMock.delete.mockResolvedValue({});
+
+    renderWithQuery(<UsersPage />);
+
+    const dialog = await openDeleteUserDialog();
+
+    await userEvent.click(within(dialog).getByRole("button", { name: "Confirm" }));
+
+    await waitFor(() => {
+      expect(axiosMock.get).toHaveBeenCalledTimes(2);
+    });
+    expect(screen.queryByText("Agent User")).not.toBeInTheDocument();
   });
 
   it("shows the create-agent dialog when the create button is clicked", async () => {

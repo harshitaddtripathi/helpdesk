@@ -37,7 +37,7 @@ export const auth = betterAuth({
     additionalFields: {
       role: {
         type: [UserRole.admin, UserRole.agent],
-        required: false,
+        required: true,
         defaultValue: UserRole.agent,
         input: false
       },
@@ -45,6 +45,11 @@ export const auth = betterAuth({
         type: "boolean",
         required: false,
         defaultValue: true,
+        input: false
+      },
+      deletedAt: {
+        type: "date",
+        required: false,
         input: false
       }
     }

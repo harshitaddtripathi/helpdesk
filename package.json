@@ -23,6 +23,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@prisma/client": "^6.0.0",
+    "@radix-ui/react-alert-dialog": "^1.1.19",
     "@tanstack/react-query": "^5.101.2",
     "axios": "^1.18.1",
     "bcryptjs": "^2.4.3",
