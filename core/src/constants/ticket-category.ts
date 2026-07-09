@@ -1,7 +1,5 @@
-export const TicketCategory = {
-  general_question: "general_question",
-  technical_question: "technical_question",
-  refund_request: "refund_request"
-} as const;
-
-export type TicketCategory = (typeof TicketCategory)[keyof typeof TicketCategory];
+export enum TicketCategory {
+  GeneralQuestion = "general_question",
+  TechnicalQuestion = "technical_question",
+  RefundRequest = "refund_request"
+}

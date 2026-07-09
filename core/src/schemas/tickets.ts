@@ -7,13 +7,7 @@ export const inboundEmailSchema = z.object({
   subject: z.string().trim().min(1),
   body: z.string().trim().min(1),
   bodyHtml: z.string().optional(),
-  category: z
-    .enum([
-      TicketCategory.general_question,
-      TicketCategory.technical_question,
-      TicketCategory.refund_request
-    ])
-    .optional()
+  category: z.nativeEnum(TicketCategory).optional()
 });
 
 export type InboundEmailInput = z.infer<typeof inboundEmailSchema>;
