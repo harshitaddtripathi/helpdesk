@@ -192,10 +192,15 @@ test.describe("authentication", () => {
 
     await page.getByRole("link", { name: "Users" }).click();
     await expect(page).toHaveURL(/\/users$/);
-    await page.getByLabel("Name").fill("Created Agent");
-    await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password").fill(password);
     await page.getByRole("button", { name: "Create agent" }).click();
+
+    const createAgentDialog = page.getByRole("dialog", { name: "Create Agent" });
+    await expect(createAgentDialog).toBeVisible();
+    await createAgentDialog.getByLabel("Name").fill("Created Agent");
+    await createAgentDialog.getByLabel("Email").fill(email);
+    await createAgentDialog.getByLabel("Password").fill(password);
+    await createAgentDialog.getByRole("button", { name: "Create agent" }).click();
+
     const createdAgentRow = page.getByRole("row").filter({
       has: page.getByRole("cell", { name: email })
     });
