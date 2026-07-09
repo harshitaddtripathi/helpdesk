@@ -7,6 +7,11 @@ import type { UserListItem } from "../types";
 
 const usersQueryKey = ["users"];
 
+type UserFormDialogState =
+  | { mode: "create" }
+  | { mode: "edit"; user: UserListItem }
+  | null;
+
 async function fetchUsers() {
   const response = await axios.get<{ users: UserListItem[] }>("/api/users", {
     withCredentials: true
@@ -17,19 +22,15 @@ async function fetchUsers() {
 
 export function UsersPage() {
   const queryClient = useQueryClient();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserListItem | null>(null);
+  const [userFormDialog, setUserFormDialog] = useState<UserFormDialogState>(null);
 
   const usersQuery = useQuery({
     queryKey: usersQueryKey,
     queryFn: fetchUsers
   });
 
-  const isFormDialogOpen = isCreateDialogOpen || Boolean(editingUser);
-
   function closeUserFormDialog() {
-    setIsCreateDialogOpen(false);
-    setEditingUser(null);
+    setUserFormDialog(null);
   }
 
   async function handleUserSaved() {
@@ -38,7 +39,7 @@ export function UsersPage() {
   }
 
   useEffect(() => {
-    if (!isFormDialogOpen) {
+    if (!userFormDialog) {
       return;
     }
 
@@ -53,7 +54,7 @@ export function UsersPage() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isFormDialogOpen]);
+  }, [userFormDialog]);
 
   return (
     <div>
@@ -61,20 +62,21 @@ export function UsersPage() {
         <h1 className="text-2xl font-bold">Users</h1>
         <button
           className="rounded-md bg-slate-950 px-4 py-2 text-sm text-white"
-          onClick={() => {
-            setEditingUser(null);
-            setIsCreateDialogOpen(true);
-          }}
+          onClick={() => setUserFormDialog({ mode: "create" })}
           type="button"
         >
           Create agent
         </button>
       </div>
 
-      {isFormDialogOpen ? (
+      {userFormDialog ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4"
-          data-testid={editingUser ? "edit-agent-dialog-backdrop" : "create-agent-dialog-backdrop"}
+          data-testid={
+            userFormDialog.mode === "edit"
+              ? "edit-agent-dialog-backdrop"
+              : "create-agent-dialog-backdrop"
+          }
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               closeUserFormDialog();
@@ -82,17 +84,19 @@ export function UsersPage() {
           }}
         >
           <div
-            aria-labelledby={editingUser ? "edit-agent-heading" : "create-agent-heading"}
+            aria-labelledby={
+              userFormDialog.mode === "edit" ? "edit-agent-heading" : "create-agent-heading"
+            }
             aria-modal="true"
             className="w-full max-w-md"
             role="dialog"
           >
-            {editingUser ? (
+            {userFormDialog.mode === "edit" ? (
               <CreateUserForm
-                key={editingUser.id}
+                key={userFormDialog.user.id}
                 mode="edit"
                 onUpdated={handleUserSaved}
-                user={editingUser}
+                user={userFormDialog.user}
               />
             ) : (
               <CreateUserForm onCreated={handleUserSaved} />
@@ -106,10 +110,7 @@ export function UsersPage() {
           error={usersQuery.error}
           isError={usersQuery.isError}
           isLoading={usersQuery.isPending}
-          onEditUser={(user) => {
-            setIsCreateDialogOpen(false);
-            setEditingUser(user);
-          }}
+          onEditUser={(user) => setUserFormDialog({ mode: "edit", user })}
           users={usersQuery.data ?? []}
         />
       </div>
