@@ -10,7 +10,7 @@ export const aiRouter = Router();
 aiRouter.use(requireAuth);
 
 const aiActionSchema = z.object({
-  ticketId: z.string().min(1)
+  ticketId: z.coerce.number().int().positive()
 });
 
 aiRouter.get(
@@ -53,7 +53,7 @@ aiRouter.post(
   })
 );
 
-async function ensureTicketExists(ticketId: string) {
+async function ensureTicketExists(ticketId: number) {
   const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
 
   if (!ticket) {

@@ -97,14 +97,14 @@ if (!Number.isInteger(port) || port <= 0) {
 if (isProduction) {
   requireEnv("CLIENT_ORIGIN");
   requireEnv("BETTER_AUTH_URL");
-  requireEnv("EMAIL_WEBHOOK_SECRET");
 }
 
 const clientOrigin = normalizeOrigin(
   requireUrl("CLIENT_ORIGIN", isProduction ? undefined : "http://localhost:5173"),
   "CLIENT_ORIGIN"
 );
-const emailWebhookSecret = readEnv("EMAIL_WEBHOOK_SECRET") ?? "";
+const webhookSecret = readEnv("WEBHOOK_SECRET") || readEnv("EMAIL_WEBHOOK_SECRET") || "";
+const emailWebhookSecret = readEnv("EMAIL_WEBHOOK_SECRET") || webhookSecret;
 
 if (emailWebhookSecret && isPlaceholderSecret(emailWebhookSecret)) {
   throw new Error("EMAIL_WEBHOOK_SECRET must be replaced with a real secret.");
@@ -112,6 +112,14 @@ if (emailWebhookSecret && isPlaceholderSecret(emailWebhookSecret)) {
 
 if (emailWebhookSecret && emailWebhookSecret.length < 32) {
   throw new Error("EMAIL_WEBHOOK_SECRET must be at least 32 characters.");
+}
+
+if (webhookSecret && isPlaceholderSecret(webhookSecret)) {
+  throw new Error("WEBHOOK_SECRET must be replaced with a real secret.");
+}
+
+if (webhookSecret && webhookSecret.length < 32) {
+  throw new Error("WEBHOOK_SECRET must be at least 32 characters.");
 }
 
 export const env = {
@@ -125,5 +133,6 @@ export const env = {
   BETTER_AUTH_URL: requireUrl("BETTER_AUTH_URL", isProduction ? undefined : `http://localhost:${port}`),
   BETTER_AUTH_SECRET: requireSecret("BETTER_AUTH_SECRET"),
   CODEX_API_KEY: readEnv("CODEX_API_KEY") ?? "",
+  WEBHOOK_SECRET: webhookSecret,
   EMAIL_WEBHOOK_SECRET: emailWebhookSecret
 };

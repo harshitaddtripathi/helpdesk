@@ -122,7 +122,7 @@ export function TicketDetailPage() {
             Status
             <select
               className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-              defaultValue={ticket.status.toLowerCase()}
+              defaultValue={ticket.status}
               name="status"
             >
               <option value="open">Open</option>

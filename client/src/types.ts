@@ -2,7 +2,7 @@ export enum UserRole {
   Admin = "admin",
   Agent = "agent"
 }
-export type TicketStatus = "OPEN" | "RESOLVED" | "CLOSED";
+export type TicketStatus = "open" | "resolved" | "closed";
 export type MessageDirection = "INBOUND" | "OUTBOUND";
 
 export type User = {
@@ -34,10 +34,12 @@ export type TicketMessage = {
 };
 
 export type Ticket = {
-  id: string;
+  id: number;
   subject: string;
+  body: string;
+  bodyHtml?: string | null;
   senderEmail: string;
-  senderName?: string | null;
+  senderName: string;
   status: TicketStatus;
   category?: Category | null;
   messages?: TicketMessage[];

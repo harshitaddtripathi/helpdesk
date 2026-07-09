@@ -13,9 +13,9 @@ dashboardRouter.get(
   asyncHandler(async (_req, res) => {
     const [open, resolved, closed, recentTickets, categoryCounts, categories] =
       await Promise.all([
-        prisma.ticket.count({ where: { status: TicketStatus.OPEN } }),
-        prisma.ticket.count({ where: { status: TicketStatus.RESOLVED } }),
-        prisma.ticket.count({ where: { status: TicketStatus.CLOSED } }),
+        prisma.ticket.count({ where: { status: TicketStatus.open } }),
+        prisma.ticket.count({ where: { status: TicketStatus.resolved } }),
+        prisma.ticket.count({ where: { status: TicketStatus.closed } }),
         prisma.ticket.findMany({
           take: 5,
           orderBy: { updatedAt: "desc" },

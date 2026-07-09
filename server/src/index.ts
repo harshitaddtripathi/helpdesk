@@ -10,6 +10,7 @@ import { emailRouter } from "./routes/email";
 import { knowledgeBaseRouter } from "./routes/knowledge-base";
 import { ticketsRouter } from "./routes/tickets";
 import { usersRouter } from "./routes/users";
+import { webhooksRouter } from "./routes/webhooks";
 import { auth } from "./lib/auth";
 import { env } from "./lib/env";
 import { errorHandler } from "./middleware/error-handler";
@@ -39,6 +40,10 @@ if (env.NODE_ENV === "production") {
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
 
+if (!env.WEBHOOK_SECRET) {
+  console.warn("WEBHOOK_SECRET is not set; inbound email webhooks will reject requests.");
+}
+
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
@@ -60,6 +65,7 @@ app.get("/api/me", requireAuth, (req, res) => {
 });
 
 app.use("/api/users", usersRouter);
+app.use("/api/webhooks", webhooksRouter);
 app.use("/api/tickets", ticketsRouter);
 app.use("/api/categories", categoriesRouter);
 app.use("/api/dashboard", dashboardRouter);

@@ -11,12 +11,12 @@ ticketsRouter.use(requireAuth);
 
 const statusSchema = z
   .enum(["open", "resolved", "closed"])
-  .transform((value) => value.toUpperCase() as TicketStatus);
+  .transform((value) => value as TicketStatus);
 
 const createTicketSchema = z.object({
   subject: z.string().min(1),
   senderEmail: z.string().email(),
-  senderName: z.string().optional(),
+  senderName: z.string().min(1),
   categorySlug: z.string().optional(),
   bodyText: z.string().min(1)
 });
@@ -88,6 +88,7 @@ ticketsRouter.post(
     const ticket = await prisma.ticket.create({
       data: {
         subject: body.subject,
+        body: body.bodyText,
         senderEmail: body.senderEmail,
         senderName: body.senderName,
         categoryId: category?.id,
@@ -113,7 +114,7 @@ ticketsRouter.post(
 ticketsRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
-    const ticketId = requireStringParam(req.params.id, "id");
+    const ticketId = requireNumberParam(req.params.id, "id");
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId },
       include: {
@@ -134,7 +135,7 @@ ticketsRouter.get(
 ticketsRouter.patch(
   "/:id",
   asyncHandler(async (req, res) => {
-    const ticketId = requireStringParam(req.params.id, "id");
+    const ticketId = requireNumberParam(req.params.id, "id");
     const body = updateTicketSchema.parse(req.body);
     const data: Prisma.TicketUpdateInput = {};
 
@@ -167,7 +168,7 @@ ticketsRouter.patch(
 ticketsRouter.post(
   "/:id/replies",
   asyncHandler(async (req, res) => {
-    const ticketId = requireStringParam(req.params.id, "id");
+    const ticketId = requireNumberParam(req.params.id, "id");
     const body = replySchema.parse(req.body);
     const ticket = await prisma.ticket.findUnique({
       where: { id: ticketId }
@@ -191,3 +192,14 @@ ticketsRouter.post(
     res.status(201).json({ message });
   })
 );
+
+function requireNumberParam(value: string | string[] | undefined, name: string) {
+  const stringValue = requireStringParam(value, name);
+  const parsedValue = Number(stringValue);
+
+  if (Number.isInteger(parsedValue) && parsedValue > 0) {
+    return parsedValue;
+  }
+
+  throw new HttpError(400, `Missing or invalid route parameter: ${name}.`);
+}

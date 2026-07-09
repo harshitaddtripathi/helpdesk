@@ -13,9 +13,15 @@ enum UserRole {
 }
 
 enum TicketStatus {
-  OPEN
-  RESOLVED
-  CLOSED
+  open
+  resolved
+  closed
+}
+
+enum TicketCategory {
+  general_question
+  technical_question
+  refund_request
 }
 
 enum MessageDirection {
@@ -30,18 +36,19 @@ enum AiOutputType {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
-  emailVerified Boolean   @default(false)
-  image         String?
-  role          UserRole  @default(agent)
-  active        Boolean   @default(true)
-  sessions      Session[]
-  accounts      Account[]
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  deletedAt     DateTime?
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String
+  emailVerified   Boolean   @default(false)
+  image           String?
+  role            UserRole  @default(agent)
+  active          Boolean   @default(true)
+  assignedTickets Ticket[]  @relation("AssignedTickets")
+  sessions        Session[]
+  accounts        Account[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
 }
 
 model Session {
@@ -101,13 +108,17 @@ model Category {
 }
 
 model Ticket {
-  id               String          @id @default(cuid())
+  id               Int             @id @default(autoincrement())
   subject          String
+  body             String
+  bodyHtml         String?
   senderEmail      String
-  senderName       String?
-  status           TicketStatus    @default(OPEN)
+  senderName       String
+  status           TicketStatus    @default(open)
   categoryId       String?
   category         Category?       @relation(fields: [categoryId], references: [id])
+  assignedToId     String?
+  assignedTo       User?           @relation("AssignedTickets", fields: [assignedToId], references: [id], onDelete: SetNull)
   providerThreadId String?
   messages         TicketMessage[]
   aiOutputs        AiOutput[]
@@ -116,13 +127,14 @@ model Ticket {
 
   @@index([status])
   @@index([categoryId])
+  @@index([assignedToId])
   @@index([createdAt])
   @@index([updatedAt])
 }
 
 model TicketMessage {
   id                String           @id @default(cuid())
-  ticketId          String
+  ticketId          Int
   ticket            Ticket           @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   direction         MessageDirection
   fromEmail         String
@@ -138,7 +150,7 @@ model TicketMessage {
 
 model AiOutput {
   id        String       @id @default(cuid())
-  ticketId  String
+  ticketId  Int
   ticket    Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   type      AiOutputType
   content   String

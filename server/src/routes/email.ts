@@ -10,7 +10,7 @@ export const emailRouter = Router();
 
 const inboundEmailSchema = z.object({
   from: z.string().email(),
-  fromName: z.string().optional(),
+  fromName: z.string().min(1),
   to: z.string().email().optional(),
   subject: z.string().min(1),
   text: z.string().min(1),
@@ -24,10 +24,6 @@ emailRouter.post(
     verifyWebhookSecret(req.headers["x-webhook-secret"]);
 
     const body = inboundEmailSchema.parse(req.body);
-    const defaultCategory = await prisma.category.findUnique({
-      where: { slug: "general-questions" }
-    });
-
     const existingTicket = body.threadId
       ? await prisma.ticket.findFirst({
           where: { providerThreadId: body.threadId }
@@ -54,10 +50,10 @@ emailRouter.post(
     const ticket = await prisma.ticket.create({
       data: {
         subject: body.subject,
+        body: body.text,
         senderEmail: body.from,
         senderName: body.fromName,
         providerThreadId: body.threadId,
-        categoryId: defaultCategory?.id,
         messages: {
           create: {
             direction: MessageDirection.INBOUND,
