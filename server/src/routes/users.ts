@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { UserRole } from "@prisma/client";
 import { createUserSchema, updateAgentSchema } from "core";
-import { createEmailPasswordUser } from "../lib/auth";
+import { createEmailPasswordUser, setCredentialPassword } from "../lib/auth";
 import { asyncHandler, HttpError, requireStringParam } from "../lib/http";
 import { prisma } from "../lib/prisma";
 import { requireAdmin } from "../middleware/require-admin";
@@ -71,9 +71,26 @@ usersRouter.patch(
       throw new HttpError(403, "Only agent accounts can be updated from this endpoint.");
     }
 
+    const email = body.email?.toLowerCase();
+
+    if (email) {
+      const userWithEmail = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true }
+      });
+
+      if (userWithEmail && userWithEmail.id !== userId) {
+        throw new HttpError(409, "A user with this email already exists.");
+      }
+    }
+
+    const { password, ...userData } = body;
     const user = await prisma.user.update({
       where: { id: userId },
-      data: body,
+      data: {
+        ...userData,
+        email
+      },
       select: {
         id: true,
         email: true,
@@ -83,6 +100,10 @@ usersRouter.patch(
         createdAt: true
       }
     });
+
+    if (password) {
+      await setCredentialPassword(userId, password);
+    }
 
     res.json({ user });
   })

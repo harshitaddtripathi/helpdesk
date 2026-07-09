@@ -9,7 +9,9 @@ export const createUserSchema = z.object({
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 
 export const updateAgentSchema = z.object({
+  email: createUserSchema.shape.email.optional(),
   name: z.string().trim().min(3, "Name must be at least 3 letters.").optional(),
+  password: createUserSchema.shape.password.optional(),
   active: z.boolean().optional()
 });
 

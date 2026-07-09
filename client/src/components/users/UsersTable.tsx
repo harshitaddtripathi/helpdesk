@@ -1,3 +1,4 @@
+import { Pencil } from "lucide-react";
 import { Alert, AlertDescription } from "../ui/alert";
 import { Badge } from "../ui/badge";
 import { Skeleton } from "../ui/skeleton";
@@ -16,10 +17,11 @@ type UsersTableProps = {
   error: unknown;
   isError: boolean;
   isLoading: boolean;
+  onEditUser: (user: UserListItem) => void;
   users: UserListItem[];
 };
 
-export function UsersTable({ error, isError, isLoading, users }: UsersTableProps) {
+export function UsersTable({ error, isError, isLoading, onEditUser, users }: UsersTableProps) {
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
       {isLoading ? (
@@ -38,12 +40,13 @@ export function UsersTable({ error, isError, isLoading, users }: UsersTableProps
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Created</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell className="text-slate-500" colSpan={4}>
+                <TableCell className="text-slate-500" colSpan={5}>
                   No users found.
                 </TableCell>
               </TableRow>
@@ -59,6 +62,17 @@ export function UsersTable({ error, isError, isLoading, users }: UsersTableProps
                   </TableCell>
                   <TableCell className="text-slate-600">
                     {new Date(user.createdAt).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <button
+                      aria-label={`Edit ${user.name}`}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-950"
+                      onClick={() => onEditUser(user)}
+                      title={`Edit ${user.name}`}
+                      type="button"
+                    >
+                      <Pencil aria-hidden="true" className="h-4 w-4" />
+                    </button>
                   </TableCell>
                 </TableRow>
               ))
@@ -79,6 +93,7 @@ function UsersTableSkeleton() {
           <TableHead>Email</TableHead>
           <TableHead>Role</TableHead>
           <TableHead>Created</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -95,6 +110,9 @@ function UsersTableSkeleton() {
             </TableCell>
             <TableCell>
               <Skeleton className="h-4 w-24" />
+            </TableCell>
+            <TableCell className="text-right">
+              <Skeleton className="ml-auto h-9 w-9" />
             </TableCell>
           </TableRow>
         ))}

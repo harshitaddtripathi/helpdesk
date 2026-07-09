@@ -47,6 +47,11 @@ async function openCreateAgentDialog() {
   return screen.findByRole("dialog", { name: "Create Agent" });
 }
 
+async function openEditAgentDialog(userName = "Agent User") {
+  await userEvent.click(await screen.findByRole("button", { name: `Edit ${userName}` }));
+  return screen.findByRole("dialog", { name: "Edit Agent" });
+}
+
 afterEach(() => {
   vi.clearAllMocks();
 });
@@ -74,6 +79,8 @@ describe("UsersPage", () => {
     expect(screen.getByText(UserRole.Admin)).toBeInTheDocument();
     expect(screen.getByText(UserRole.Agent)).toBeInTheDocument();
     expect(screen.getByText(new Date(users[0]!.createdAt).toLocaleDateString())).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit Admin User" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Edit Agent User" })).toBeInTheDocument();
     expect(axiosMock.get).toHaveBeenCalledWith("/api/users", { withCredentials: true });
   });
 
@@ -110,6 +117,42 @@ describe("UsersPage", () => {
     await userEvent.keyboard("{Escape}");
 
     expect(screen.queryByRole("dialog", { name: "Create Agent" })).not.toBeInTheDocument();
+  });
+
+  it("shows the edit-agent dialog with the selected user values", async () => {
+    axiosMock.get.mockResolvedValue({ data: { users } });
+
+    renderWithQuery(<UsersPage />);
+
+    const dialog = await openEditAgentDialog();
+
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByRole("form", { name: "Edit Agent" })).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Name")).toHaveValue("Agent User");
+    expect(within(dialog).getByLabelText("Email")).toHaveValue("agent@example.com");
+    expect(within(dialog).getByLabelText("Password")).toHaveValue("");
+  });
+
+  it("hides the edit-agent dialog when clicking outside it", async () => {
+    axiosMock.get.mockResolvedValue({ data: { users } });
+
+    renderWithQuery(<UsersPage />);
+
+    await openEditAgentDialog();
+    await userEvent.click(screen.getByTestId("edit-agent-dialog-backdrop"));
+
+    expect(screen.queryByRole("dialog", { name: "Edit Agent" })).not.toBeInTheDocument();
+  });
+
+  it("hides the edit-agent dialog when Escape is pressed", async () => {
+    axiosMock.get.mockResolvedValue({ data: { users } });
+
+    renderWithQuery(<UsersPage />);
+
+    await openEditAgentDialog();
+    await userEvent.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog", { name: "Edit Agent" })).not.toBeInTheDocument();
   });
 
   it("prevents the create-agent form from requesting saved credentials", async () => {
@@ -187,6 +230,47 @@ describe("UsersPage", () => {
     });
 
     expect(await screen.findByText("new-agent@example.com")).toBeInTheDocument();
+    expect(axiosMock.get).toHaveBeenCalledTimes(2);
+  });
+
+  it("updates an agent and refreshes the users query", async () => {
+    const updatedUsers = users.map((user) =>
+      user.id === "user-agent"
+        ? { ...user, name: "Renamed Agent", email: "renamed-agent@example.com" }
+        : user
+    );
+
+    axiosMock.get
+      .mockResolvedValueOnce({ data: { users } })
+      .mockResolvedValueOnce({ data: { users: updatedUsers } });
+    apiFetchMock.mockResolvedValue(undefined);
+
+    renderWithQuery(<UsersPage />);
+
+    await screen.findByText("Agent User");
+
+    const dialog = await openEditAgentDialog();
+    const form = within(dialog).getByRole("form", { name: "Edit Agent" });
+    const nameInput = within(form).getByLabelText("Name");
+    const emailInput = within(form).getByLabelText("Email");
+
+    await userEvent.clear(nameInput);
+    await userEvent.type(nameInput, "Renamed Agent");
+    await userEvent.clear(emailInput);
+    await userEvent.type(emailInput, "renamed-agent@example.com");
+    await userEvent.click(within(form).getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(apiFetchMock).toHaveBeenCalledWith("/api/users/user-agent", {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: "Renamed Agent",
+          email: "renamed-agent@example.com"
+        })
+      });
+    });
+
+    expect(await screen.findByText("renamed-agent@example.com")).toBeInTheDocument();
     expect(axiosMock.get).toHaveBeenCalledTimes(2);
   });
 

@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "../../lib/api";
 import { renderWithQuery } from "../../test/render-with-query";
+import { UserRole, type UserListItem } from "../../types";
 import { CreateUserForm } from "./CreateUserForm";
 
 vi.mock("../../lib/api", () => ({
@@ -10,6 +11,13 @@ vi.mock("../../lib/api", () => ({
 }));
 
 const apiFetchMock = vi.mocked(apiFetch);
+const existingAgent: UserListItem = {
+  id: "user-agent",
+  name: "Agent User",
+  email: "agent@example.com",
+  role: UserRole.Agent,
+  createdAt: "2026-07-02T12:00:00.000Z"
+};
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -115,5 +123,95 @@ describe("CreateUserForm", () => {
     expect(alert).toHaveTextContent("Email already exists.");
     expect(errorMessage).toHaveClass("text-red-700");
     expect(onCreated).not.toHaveBeenCalled();
+  });
+
+  it("renders edit mode with the selected user values and optional password", () => {
+    renderWithQuery(<CreateUserForm mode="edit" onUpdated={vi.fn()} user={existingAgent} />);
+
+    const form = screen.getByRole("form", { name: "Edit Agent" });
+
+    expect(within(form).getByLabelText("Name")).toHaveValue("Agent User");
+    expect(within(form).getByLabelText("Email")).toHaveValue("agent@example.com");
+    expect(within(form).getByLabelText("Password")).toHaveValue("");
+    expect(within(form).getByLabelText("Password")).not.toBeRequired();
+    expect(within(form).getByRole("button", { name: "Save changes" })).toBeInTheDocument();
+  });
+
+  it("updates a user without sending password when the edit password is blank", async () => {
+    const onUpdated = vi.fn();
+    apiFetchMock.mockResolvedValue(undefined);
+
+    renderWithQuery(<CreateUserForm mode="edit" onUpdated={onUpdated} user={existingAgent} />);
+
+    const form = screen.getByRole("form", { name: "Edit Agent" });
+    const nameInput = within(form).getByLabelText("Name");
+
+    await userEvent.clear(nameInput);
+    await userEvent.type(nameInput, "Renamed Agent");
+    await userEvent.click(within(form).getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(apiFetchMock).toHaveBeenCalledWith("/api/users/user-agent", {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: "Renamed Agent",
+          email: "agent@example.com"
+        })
+      });
+    });
+
+    expect(onUpdated).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends password when editing a user with a new password", async () => {
+    const onUpdated = vi.fn();
+    apiFetchMock.mockResolvedValue(undefined);
+
+    renderWithQuery(<CreateUserForm mode="edit" onUpdated={onUpdated} user={existingAgent} />);
+
+    const form = screen.getByRole("form", { name: "Edit Agent" });
+
+    await userEvent.type(within(form).getByLabelText("Password"), "newpass123");
+    await userEvent.click(within(form).getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => {
+      expect(apiFetchMock).toHaveBeenCalledWith("/api/users/user-agent", {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: "Agent User",
+          email: "agent@example.com",
+          password: "newpass123"
+        })
+      });
+    });
+
+    expect(onUpdated).toHaveBeenCalledTimes(1);
+  });
+
+  it("validates edit values and marks invalid fields before submitting", async () => {
+    const onUpdated = vi.fn();
+
+    renderWithQuery(<CreateUserForm mode="edit" onUpdated={onUpdated} user={existingAgent} />);
+
+    const form = screen.getByRole("form", { name: "Edit Agent" });
+    const nameInput = within(form).getByLabelText("Name");
+    const emailInput = within(form).getByLabelText("Email");
+    const passwordInput = within(form).getByLabelText("Password");
+
+    await userEvent.clear(nameInput);
+    await userEvent.type(nameInput, "Al");
+    await userEvent.clear(emailInput);
+    await userEvent.type(emailInput, "not-an-email");
+    await userEvent.type(passwordInput, "short");
+    await userEvent.click(within(form).getByRole("button", { name: "Save changes" }));
+
+    expect(await within(form).findByText("Name must be at least 3 letters.")).toBeInTheDocument();
+    expect(within(form).getByText("Enter a valid email address.")).toBeInTheDocument();
+    expect(within(form).getByText("Password must be at least 8 letters.")).toBeInTheDocument();
+    expect(nameInput).toHaveClass("border-red-500");
+    expect(emailInput).toHaveClass("border-red-500");
+    expect(passwordInput).toHaveClass("border-red-500");
+    expect(apiFetchMock).not.toHaveBeenCalled();
+    expect(onUpdated).not.toHaveBeenCalled();
   });
 });
