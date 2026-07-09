@@ -42,6 +42,11 @@ const users: UserListItem[] = [
   }
 ];
 
+async function openCreateAgentDialog() {
+  await userEvent.click(screen.getByRole("button", { name: "Create agent" }));
+  return screen.findByRole("dialog", { name: "Create Agent" });
+}
+
 afterEach(() => {
   vi.clearAllMocks();
 });
@@ -72,19 +77,59 @@ describe("UsersPage", () => {
     expect(axiosMock.get).toHaveBeenCalledWith("/api/users", { withCredentials: true });
   });
 
-  it("prevents the create-agent form from requesting saved credentials", () => {
+  it("shows the create-agent dialog when the create button is clicked", async () => {
+    axiosMock.get.mockResolvedValue({ data: { users } });
+
+    renderWithQuery(<UsersPage />);
+
+    expect(screen.queryByRole("dialog", { name: "Create Agent" })).not.toBeInTheDocument();
+
+    const dialog = await openCreateAgentDialog();
+
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getByRole("form", { name: "Create Agent" })).toBeInTheDocument();
+  });
+
+  it("hides the create-agent dialog when clicking outside it", async () => {
+    axiosMock.get.mockResolvedValue({ data: { users } });
+
+    renderWithQuery(<UsersPage />);
+
+    await openCreateAgentDialog();
+    await userEvent.click(screen.getByTestId("create-agent-dialog-backdrop"));
+
+    expect(screen.queryByRole("dialog", { name: "Create Agent" })).not.toBeInTheDocument();
+  });
+
+  it("hides the create-agent dialog when Escape is pressed", async () => {
+    axiosMock.get.mockResolvedValue({ data: { users } });
+
+    renderWithQuery(<UsersPage />);
+
+    await openCreateAgentDialog();
+    await userEvent.keyboard("{Escape}");
+
+    expect(screen.queryByRole("dialog", { name: "Create Agent" })).not.toBeInTheDocument();
+  });
+
+  it("prevents the create-agent form from requesting saved credentials", async () => {
     axiosMock.get.mockReturnValue(new Promise(() => undefined));
 
     renderWithQuery(<UsersPage />);
 
-    expect(screen.getByRole("form", { name: "Create Agent" })).toHaveAttribute(
+    const dialog = await openCreateAgentDialog();
+
+    expect(within(dialog).getByRole("form", { name: "Create Agent" })).toHaveAttribute(
       "autocomplete",
       "off"
     );
-    expect(screen.getByLabelText("Email")).toHaveAttribute("autocomplete", "off");
-    expect(screen.getByLabelText("Email")).toHaveAttribute("name", "agentEmail");
-    expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "new-password");
-    expect(screen.getByLabelText("Password")).toHaveAttribute("name", "agentPassword");
+    expect(within(dialog).getByLabelText("Email")).toHaveAttribute("autocomplete", "off");
+    expect(within(dialog).getByLabelText("Email")).toHaveAttribute("name", "agentEmail");
+    expect(within(dialog).getByLabelText("Password")).toHaveAttribute(
+      "autocomplete",
+      "new-password"
+    );
+    expect(within(dialog).getByLabelText("Password")).toHaveAttribute("name", "agentPassword");
   });
 
   it("shows an error alert when users cannot be loaded", async () => {
@@ -122,10 +167,13 @@ describe("UsersPage", () => {
 
     await screen.findByText("Admin User");
 
-    await userEvent.type(screen.getByLabelText("Name"), "New Agent");
-    await userEvent.type(screen.getByLabelText("Email"), "new-agent@example.com");
-    await userEvent.type(screen.getByLabelText("Password"), "password123");
-    await userEvent.click(screen.getByRole("button", { name: "Create agent" }));
+    const dialog = await openCreateAgentDialog();
+    const form = within(dialog).getByRole("form", { name: "Create Agent" });
+
+    await userEvent.type(within(form).getByLabelText("Name"), "New Agent");
+    await userEvent.type(within(form).getByLabelText("Email"), "new-agent@example.com");
+    await userEvent.type(within(form).getByLabelText("Password"), "password123");
+    await userEvent.click(within(form).getByRole("button", { name: "Create agent" }));
 
     await waitFor(() => {
       expect(apiFetchMock).toHaveBeenCalledWith("/api/users", {
@@ -149,16 +197,23 @@ describe("UsersPage", () => {
 
     await screen.findByText("Admin User");
 
-    await userEvent.type(screen.getByLabelText("Name"), "Al");
-    await userEvent.type(screen.getByLabelText("Email"), "not-an-email");
-    await userEvent.type(screen.getByLabelText("Password"), "short");
-    await userEvent.click(screen.getByRole("button", { name: "Create agent" }));
+    const dialog = await openCreateAgentDialog();
+    const form = within(dialog).getByRole("form", { name: "Create Agent" });
+    const nameInput = within(form).getByLabelText("Name");
+    const emailInput = within(form).getByLabelText("Email");
+    const passwordInput = within(form).getByLabelText("Password");
 
-    const form = screen.getByRole("form", { name: "Create Agent" });
+    await userEvent.type(nameInput, "Al");
+    await userEvent.type(emailInput, "not-an-email");
+    await userEvent.type(passwordInput, "short");
+    await userEvent.click(within(form).getByRole("button", { name: "Create agent" }));
 
     expect(await within(form).findByText("Name must be at least 3 letters.")).toBeInTheDocument();
     expect(within(form).getByText("Enter a valid email address.")).toBeInTheDocument();
     expect(within(form).getByText("Password must be at least 8 letters.")).toBeInTheDocument();
+    expect(nameInput).toHaveClass("border-red-500");
+    expect(emailInput).toHaveClass("border-red-500");
+    expect(passwordInput).toHaveClass("border-red-500");
     expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
@@ -170,13 +225,18 @@ describe("UsersPage", () => {
 
     await screen.findByText("Admin User");
 
-    await userEvent.type(screen.getByLabelText("Name"), "Existing Agent");
-    await userEvent.type(screen.getByLabelText("Email"), "agent@example.com");
-    await userEvent.type(screen.getByLabelText("Password"), "password123");
-    await userEvent.click(screen.getByRole("button", { name: "Create agent" }));
+    const dialog = await openCreateAgentDialog();
+    const form = within(dialog).getByRole("form", { name: "Create Agent" });
 
-    const form = screen.getByRole("form", { name: "Create Agent" });
+    await userEvent.type(within(form).getByLabelText("Name"), "Existing Agent");
+    await userEvent.type(within(form).getByLabelText("Email"), "agent@example.com");
+    await userEvent.type(within(form).getByLabelText("Password"), "password123");
+    await userEvent.click(within(form).getByRole("button", { name: "Create agent" }));
 
-    expect(await within(form).findByRole("alert")).toHaveTextContent("Email already exists.");
+    const alert = await within(form).findByRole("alert");
+    const errorMessage = within(alert).getByText("Email already exists.");
+
+    expect(alert).toHaveTextContent("Email already exists.");
+    expect(errorMessage).toHaveClass("text-red-700");
   });
 });

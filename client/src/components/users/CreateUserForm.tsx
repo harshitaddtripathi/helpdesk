@@ -8,6 +8,11 @@ import { apiFetch } from "../../lib/api";
 import { getRequestErrorMessage } from "../../lib/request-error";
 import { Alert, AlertDescription } from "../ui/alert";
 
+const inputClassName = (hasError: boolean) =>
+  `mt-1 w-full rounded-md border px-3 py-2 outline-none ${
+    hasError ? "border-red-500 focus:border-red-600" : "border-slate-300 focus:border-slate-950"
+  }`;
+
 const createUserFormSchema = z.object({
   name: createUserSchema.shape.name,
   agentEmail: createUserSchema.shape.email,
@@ -79,7 +84,7 @@ export function CreateUserForm({ onCreated }: CreateUserFormProps) {
       <label className="mt-4 block text-sm font-medium text-slate-700">
         Name
         <input
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          className={inputClassName(Boolean(errors.name))}
           autoComplete="off"
           aria-invalid={errors.name ? "true" : "false"}
           {...register("name")}
@@ -95,7 +100,7 @@ export function CreateUserForm({ onCreated }: CreateUserFormProps) {
       <label className="mt-4 block text-sm font-medium text-slate-700">
         Email
         <input
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          className={inputClassName(Boolean(errors.agentEmail))}
           autoComplete="off"
           aria-invalid={errors.agentEmail ? "true" : "false"}
           type="email"
@@ -112,7 +117,7 @@ export function CreateUserForm({ onCreated }: CreateUserFormProps) {
       <label className="mt-4 block text-sm font-medium text-slate-700">
         Password
         <input
-          className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+          className={inputClassName(Boolean(errors.agentPassword))}
           autoComplete="new-password"
           aria-invalid={errors.agentPassword ? "true" : "false"}
           type="password"
@@ -128,7 +133,7 @@ export function CreateUserForm({ onCreated }: CreateUserFormProps) {
 
       {formError ? (
         <Alert className="mt-4" variant="destructive">
-          <AlertDescription>{formError}</AlertDescription>
+          <AlertDescription className="font-medium text-red-700">{formError}</AlertDescription>
         </Alert>
       ) : null}
 
