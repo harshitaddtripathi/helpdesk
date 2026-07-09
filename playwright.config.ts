@@ -3,7 +3,7 @@ import { config as loadEnv } from "dotenv";
 
 loadEnv({ path: "server/.env.test", override: true });
 
-const serverURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3001";
+const serverURL = process.env.API_BASE_URL ?? process.env.BETTER_AUTH_URL ?? "http://localhost:3001";
 const baseURL = process.env.CLIENT_ORIGIN ?? "http://localhost:5174";
 const testEnv = Object.fromEntries(
   Object.entries(process.env).filter((entry): entry is [string, string] => typeof entry[1] === "string")
