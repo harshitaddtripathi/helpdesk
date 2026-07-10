@@ -29,6 +29,11 @@ enum MessageDirection {
   OUTBOUND
 }
 
+enum SenderType {
+  AGENT
+  CUSTOMER
+}
+
 enum AiOutputType {
   CLASSIFICATION
   SUMMARY
@@ -137,6 +142,7 @@ model TicketMessage {
   ticketId          Int
   ticket            Ticket           @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   direction         MessageDirection
+  senderType        SenderType       @default(CUSTOMER)
   fromEmail         String
   toEmail           String?
   subject           String?

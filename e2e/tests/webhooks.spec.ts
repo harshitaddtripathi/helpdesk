@@ -17,6 +17,7 @@ type WebhookTicket = {
     id: string;
     ticketId: number;
     direction: string;
+    senderType: string;
     fromEmail: string;
     subject: string | null;
     bodyText: string;
@@ -27,6 +28,7 @@ type WebhookMessage = {
   id: string;
   ticketId: number;
   direction: string;
+  senderType: string;
   fromEmail: string;
   subject: string | null;
   bodyText: string;
@@ -91,6 +93,7 @@ test.describe("inbound email webhook", () => {
       expect.objectContaining({
         ticketId: body.ticket.id,
         direction: "INBOUND",
+        senderType: "CUSTOMER",
         fromEmail: from,
         subject: "Cannot access course",
         bodyText: "Hi, I need help."
@@ -137,6 +140,7 @@ test.describe("inbound email webhook", () => {
       expect.objectContaining({
         ticketId: created.ticket.id,
         direction: "INBOUND",
+        senderType: "CUSTOMER",
         fromEmail: from,
         subject: "Fwd: Re: cannot access course",
         bodyText: "Following up."

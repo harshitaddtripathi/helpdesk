@@ -1,0 +1,2 @@
+ALTER TABLE "TicketMessage"
+ALTER COLUMN "senderType" SET DEFAULT 'CUSTOMER';

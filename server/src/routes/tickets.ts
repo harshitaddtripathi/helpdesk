@@ -236,6 +236,7 @@ ticketsRouter.post(
       data: {
         ticketId: ticket.id,
         direction: MessageDirection.OUTBOUND,
+        senderType: "AGENT",
         fromEmail: req.user?.email ?? "agent",
         toEmail: ticket.senderEmail,
         subject: `Re: ${ticket.subject}`,

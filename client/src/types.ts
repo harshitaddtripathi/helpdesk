@@ -6,6 +6,7 @@ export enum UserRole {
 }
 export type { TicketStatus };
 export type MessageDirection = "INBOUND" | "OUTBOUND";
+export type SenderType = "AGENT" | "CUSTOMER";
 
 export type User = {
   id: string;
@@ -28,6 +29,7 @@ export type Category = {
 export type TicketMessage = {
   id: string;
   direction: MessageDirection;
+  senderType: SenderType;
   fromEmail: string;
   toEmail?: string | null;
   subject?: string | null;

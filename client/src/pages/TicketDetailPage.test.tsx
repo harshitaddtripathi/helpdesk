@@ -51,6 +51,7 @@ const ticket: Ticket = {
     {
       id: "message-1",
       direction: "INBOUND",
+      senderType: "CUSTOMER",
       fromEmail: "customer@example.com",
       bodyText: "I need a refund.",
       createdAt: "2026-07-01T12:00:00.000Z"
@@ -72,14 +73,36 @@ function renderTicketDetailPage() {
 
 function mockTicketDetailRequests({
   savedTicket = ticket,
-  ticketDetail = ticket
+  ticketDetail = ticket,
+  replyError
 }: {
   savedTicket?: Ticket;
   ticketDetail?: Ticket;
+  replyError?: Error;
 } = {}) {
   apiFetchMock.mockImplementation(async (path, options) => {
     if (path === "/api/tickets/1" && options?.method === "PATCH") {
       return { ticket: savedTicket };
+    }
+
+    if (path === "/api/tickets/1/replies" && options?.method === "POST") {
+      if (replyError) {
+        throw replyError;
+      }
+
+      return {
+        message: {
+          id: "message-2",
+          ticketId: 1,
+          direction: "OUTBOUND",
+          senderType: "AGENT",
+          fromEmail: "agent@example.com",
+          toEmail: "customer@example.com",
+          subject: "Re: Refund request",
+          bodyText: "We can help with that.",
+          createdAt: "2026-07-01T12:05:00.000Z"
+        }
+      };
     }
 
     if (path === "/api/tickets/1") {
@@ -99,6 +122,23 @@ afterEach(() => {
 });
 
 describe("TicketDetailPage", () => {
+  it("shows ticket subject, requester, created time, and updated time", async () => {
+    mockTicketDetailRequests();
+
+    renderTicketDetailPage();
+
+    expect(await screen.findByRole("link", { name: "Back to tickets" })).toHaveAttribute(
+      "href",
+      "/tickets"
+    );
+    expect(await screen.findByRole("heading", { name: "Refund request" })).toBeInTheDocument();
+    expect(screen.getByText("Raised by")).toBeInTheDocument();
+    expect(screen.getByText("Customer One")).toBeInTheDocument();
+    expect(screen.getByText("customer@example.com")).toBeInTheDocument();
+    expect(screen.getByText("Created")).toBeInTheDocument();
+    expect(screen.getByText("Updated")).toBeInTheDocument();
+  });
+
   it("renders active agents as assignment options", async () => {
     mockTicketDetailRequests();
 
@@ -162,5 +202,83 @@ describe("TicketDetailPage", () => {
         })
       });
     });
+  });
+
+  it("shows an error when sending an empty reply", async () => {
+    mockTicketDetailRequests();
+
+    renderTicketDetailPage();
+
+    await screen.findByRole("heading", { name: "Refund request" });
+    await userEvent.click(screen.getByRole("button", { name: "Send reply" }));
+
+    expect(screen.getByText("Write a message before sending your reply.")).toBeInTheDocument();
+    expect(apiFetchMock).not.toHaveBeenCalledWith(
+      "/api/tickets/1/replies",
+      expect.objectContaining({ method: "POST" })
+    );
+  });
+
+  it("clears the empty reply error when typing a message", async () => {
+    mockTicketDetailRequests();
+
+    renderTicketDetailPage();
+
+    await screen.findByRole("heading", { name: "Refund request" });
+    await userEvent.click(screen.getByRole("button", { name: "Send reply" }));
+
+    expect(screen.getByText("Write a message before sending your reply.")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Reply"), "We can help with that.");
+
+    expect(screen.queryByText("Write a message before sending your reply.")).not.toBeInTheDocument();
+  });
+
+  it("submits a reply and clears the reply textarea", async () => {
+    const refreshedTicket: Ticket = {
+      ...ticket,
+      messages: [
+        ...(ticket.messages ?? []),
+        {
+          id: "message-2",
+          direction: "OUTBOUND",
+          senderType: "AGENT",
+          fromEmail: "agent@example.com",
+          toEmail: "customer@example.com",
+          subject: "Re: Refund request",
+          bodyText: "We can help with that.",
+          createdAt: "2026-07-01T12:05:00.000Z"
+        }
+      ]
+    };
+    mockTicketDetailRequests({ ticketDetail: refreshedTicket });
+
+    renderTicketDetailPage();
+
+    const replyInput = await screen.findByLabelText("Reply");
+    await userEvent.type(replyInput, "We can help with that.");
+    await userEvent.click(screen.getByRole("button", { name: "Send reply" }));
+
+    await waitFor(() => {
+      expect(apiFetchMock).toHaveBeenCalledWith("/api/tickets/1/replies", {
+        method: "POST",
+        body: JSON.stringify({ bodyText: "We can help with that." })
+      });
+    });
+    await waitFor(() => {
+      expect(replyInput).toHaveValue("");
+    });
+    expect(screen.getByText("We can help with that.")).toBeInTheDocument();
+  });
+
+  it("shows an error when reply submission fails", async () => {
+    mockTicketDetailRequests({ replyError: new Error("Failed to send test reply.") });
+
+    renderTicketDetailPage();
+
+    await userEvent.type(await screen.findByLabelText("Reply"), "We can help with that.");
+    await userEvent.click(screen.getByRole("button", { name: "Send reply" }));
+
+    expect(await screen.findByText("Failed to send test reply.")).toBeInTheDocument();
   });
 });

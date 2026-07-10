@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
-import { ticketStatuses } from "core";
 import { useParams } from "react-router";
+import { TicketDetail } from "../components/tickets/TicketDetail";
+import { UpdateTicket } from "../components/tickets/UpdateTicket";
+import { BackLink } from "../components/ui/back-link";
 import { apiFetch } from "../lib/api";
 import type { Category, Ticket, User } from "../types";
 
@@ -15,6 +17,7 @@ export function TicketDetailPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [agents, setAgents] = useState<User[]>([]);
   const [reply, setReply] = useState("");
+  const [replyError, setReplyError] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -62,8 +65,13 @@ export function TicketDetailPage() {
 
   async function handleReplySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!ticketId || !reply.trim()) return;
+    if (!ticketId) return;
+    if (!reply.trim()) {
+      setReplyError("Write a message before sending your reply.");
+      return;
+    }
     setError("");
+    setReplyError("");
 
     try {
       await apiFetch(`/api/tickets/${ticketId}/replies`, {
@@ -74,7 +82,7 @@ export function TicketDetailPage() {
       setTicket(result.ticket);
       setReply("");
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Failed to send reply.");
+      setReplyError(requestError instanceof Error ? requestError.message : "Failed to send reply.");
     }
   }
 
@@ -86,118 +94,86 @@ export function TicketDetailPage() {
     return <p className="text-sm text-slate-500">Loading ticket...</p>;
   }
 
-  const agentOptions =
-    ticket.assignedTo && !agents.some((agent) => agent.id === ticket.assignedTo?.id)
-      ? [ticket.assignedTo, ...agents]
-      : agents;
-
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-      <section className="space-y-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <h2 className="text-xl font-semibold text-slate-950">{ticket.subject}</h2>
-          <p className="mt-1 text-sm text-slate-500">{ticket.senderEmail}</p>
-        </div>
+    <div className="space-y-4">
+      <BackLink to="/tickets">Back to tickets</BackLink>
 
-        <div className="space-y-3">
-          {ticket.messages?.map((message) => (
-            <article className="rounded-lg border border-slate-200 bg-white p-4" key={message.id}>
-              <div className="flex items-center justify-between gap-3 text-xs text-slate-500">
-                <span>{message.direction}</span>
-                <span>{new Date(message.createdAt).toLocaleString()}</span>
-              </div>
-              <p className="mt-3 whitespace-pre-wrap text-sm text-slate-700">{message.bodyText}</p>
-            </article>
-          ))}
-        </div>
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <section className="space-y-4">
+          <TicketDetail ticket={ticket} />
 
-        <form className="rounded-lg border border-slate-200 bg-white p-4" onSubmit={handleReplySubmit}>
-          <label className="block text-sm font-medium text-slate-700">
-            Reply
-            <textarea
-              className="mt-2 min-h-32 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-950"
-              value={reply}
-              onChange={(event) => setReply(event.target.value)}
-            />
-          </label>
-          <button className="mt-3 rounded-md bg-slate-950 px-4 py-2 text-sm text-white" type="submit">
-            Send reply
-          </button>
-        </form>
-      </section>
+          <div className="space-y-3">
+            {ticket.messages?.map((message) => {
+              const senderType = message.senderType ?? (message.direction === "OUTBOUND" ? "AGENT" : "CUSTOMER");
+              const isAgentMessage = senderType === "AGENT";
 
-      <aside className="space-y-4">
-        <form className="rounded-lg border border-slate-200 bg-white p-4" onSubmit={handleMetaSubmit}>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            Ticket Controls
-          </h3>
+              return (
+                <article
+                  className={`flex ${isAgentMessage ? "justify-end" : "justify-start"}`}
+                  key={message.id}
+                >
+                  <div
+                    className={`max-w-[min(680px,85%)] rounded-2xl px-4 py-3 shadow-sm ${
+                      isAgentMessage
+                        ? "rounded-br-md bg-slate-950 text-white"
+                        : "rounded-bl-md border border-slate-200 bg-white text-slate-900"
+                    }`}
+                  >
+                    <div
+                      className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs ${
+                        isAgentMessage ? "text-slate-200" : "text-slate-500"
+                      }`}
+                    >
+                      <span className={`font-bold ${isAgentMessage ? "text-white" : "text-slate-950"}`}>
+                        {formatSenderType(senderType)}
+                      </span>
+                      <span>{new Date(message.createdAt).toLocaleString()}</span>
+                    </div>
+                    <p
+                      className={`mt-2 whitespace-pre-wrap text-sm leading-6 ${
+                        isAgentMessage ? "text-white" : "text-slate-700"
+                      }`}
+                    >
+                      {message.bodyText}
+                    </p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
 
-          <label className="mt-4 block text-sm font-medium text-slate-700">
-            Status
-            <select
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-              defaultValue={ticket.status}
-              name="status"
-            >
-              {ticketStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {formatStatus(status)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <form className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm" onSubmit={handleReplySubmit}>
+            <label className="block text-sm font-medium text-slate-700">
+              Reply
+              <textarea
+                className="mt-2 min-h-28 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-950 focus:bg-white focus:ring-2 focus:ring-slate-200"
+                value={reply}
+                onChange={(event) => {
+                  setReply(event.target.value);
+                  if (replyError) {
+                    setReplyError("");
+                  }
+                }}
+              />
+            </label>
+            {replyError ? <p className="mt-2 text-sm text-red-600">{replyError}</p> : null}
+            <button className="mt-3 rounded-full bg-slate-950 px-4 py-2 text-sm text-white" type="submit">
+              Send reply
+            </button>
+          </form>
+        </section>
 
-          <label className="mt-4 block text-sm font-medium text-slate-700">
-            Category
-            <select
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-              defaultValue={ticket.category?.slug ?? ""}
-              name="categorySlug"
-            >
-              <option value="">None</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.slug}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="mt-4 block text-sm font-medium text-slate-700">
-            Assigned agent
-            <select
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-              defaultValue={ticket.assignedTo?.id ?? ""}
-              name="assignedToId"
-            >
-              <option value="">Unassigned</option>
-              {agentOptions.map((agent) => (
-                <option key={agent.id} value={agent.id}>
-                  {agent.name} ({agent.email})
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <button className="mt-4 w-full rounded-md bg-slate-950 px-4 py-2 text-sm text-white" type="submit">
-            Save changes
-          </button>
-        </form>
-
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-            AI Assistance
-          </h3>
-          <p className="mt-3 text-sm text-slate-600">
-            Classification, summaries, and suggested replies are scaffolded in the API and ready for
-            Codex integration.
-          </p>
-        </div>
-      </aside>
+        <UpdateTicket
+          agents={agents}
+          categories={categories}
+          onSubmit={handleMetaSubmit}
+          ticket={ticket}
+        />
+      </div>
     </div>
   );
 }
 
-function formatStatus(status: string) {
-  return status.charAt(0).toUpperCase() + status.slice(1);
+function formatSenderType(senderType: string) {
+  return senderType.charAt(0).toUpperCase() + senderType.slice(1).toLowerCase();
 }
