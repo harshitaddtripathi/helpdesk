@@ -18,6 +18,13 @@ vi.mock("axios", () => {
 });
 
 const axiosMock = vi.mocked(axios);
+const defaultTicketParams = {
+  sortBy: "createdAt",
+  sortOrder: "desc",
+  search: "",
+  status: "all",
+  category: "all"
+};
 
 const tickets: Array<
   Pick<
@@ -50,9 +57,9 @@ describe("TicketsPage", () => {
 
     renderWithQuery(<TicketsPage />);
 
-    expect(await screen.findByText("Refund request")).toBeInTheDocument();
+    expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
     expect(axiosMock.get).toHaveBeenCalledWith("/api/tickets", {
-      params: { sortBy: "createdAt", sortOrder: "desc" },
+      params: defaultTicketParams,
       withCredentials: true
     });
   });
@@ -62,13 +69,13 @@ describe("TicketsPage", () => {
 
     renderWithQuery(<TicketsPage />);
 
-    expect(await screen.findByText("Refund request")).toBeInTheDocument();
+    expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Subject/ }));
 
     await waitFor(() => {
       expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { sortBy: "subject", sortOrder: "asc" },
+        params: { ...defaultTicketParams, sortBy: "subject", sortOrder: "asc" },
         withCredentials: true
       });
     });
@@ -80,12 +87,12 @@ describe("TicketsPage", () => {
 
     renderWithQuery(<TicketsPage />);
 
-    expect(await screen.findByText("Refund request")).toBeInTheDocument();
+    expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Subject/ }));
     await waitFor(() => {
       expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { sortBy: "subject", sortOrder: "asc" },
+        params: { ...defaultTicketParams, sortBy: "subject", sortOrder: "asc" },
         withCredentials: true
       });
     });
@@ -94,7 +101,7 @@ describe("TicketsPage", () => {
 
     await waitFor(() => {
       expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { sortBy: "subject", sortOrder: "desc" },
+        params: { ...defaultTicketParams, sortBy: "subject", sortOrder: "desc" },
         withCredentials: true
       });
     });
@@ -106,12 +113,12 @@ describe("TicketsPage", () => {
 
     renderWithQuery(<TicketsPage />);
 
-    expect(await screen.findByText("Refund request")).toBeInTheDocument();
+    expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Subject/ }));
     await waitFor(() => {
       expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { sortBy: "subject", sortOrder: "asc" },
+        params: { ...defaultTicketParams, sortBy: "subject", sortOrder: "asc" },
         withCredentials: true
       });
     });
@@ -119,7 +126,7 @@ describe("TicketsPage", () => {
     await userEvent.click(screen.getByRole("button", { name: /Subject/ }));
     await waitFor(() => {
       expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { sortBy: "subject", sortOrder: "desc" },
+        params: { ...defaultTicketParams, sortBy: "subject", sortOrder: "desc" },
         withCredentials: true
       });
     });
@@ -128,10 +135,87 @@ describe("TicketsPage", () => {
 
     await waitFor(() => {
       expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { sortBy: "createdAt", sortOrder: "desc" },
+        params: defaultTicketParams,
         withCredentials: true
       });
     });
     expect(screen.getByRole("button", { name: /Subject not sorted/ })).toBeInTheDocument();
+  });
+
+  it("filters tickets by status on the server", async () => {
+    axiosMock.get.mockResolvedValue({ data: { tickets } });
+
+    renderWithQuery(<TicketsPage />);
+
+    expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Status"), "open");
+
+    await waitFor(() => {
+      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
+        params: { ...defaultTicketParams, status: "open" },
+        withCredentials: true
+      });
+    });
+  });
+
+  it("filters tickets by category on the server", async () => {
+    axiosMock.get.mockResolvedValue({ data: { tickets } });
+
+    renderWithQuery(<TicketsPage />);
+
+    expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Category"), "refund_request");
+
+    await waitFor(() => {
+      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
+        params: { ...defaultTicketParams, category: "refund_request" },
+        withCredentials: true
+      });
+    });
+  });
+
+  it("filters tickets by search text on the server", async () => {
+    axiosMock.get.mockResolvedValue({ data: { tickets } });
+
+    renderWithQuery(<TicketsPage />);
+
+    expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Search"), "refund");
+
+    await waitFor(() => {
+      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
+        params: { ...defaultTicketParams, search: "refund" },
+        withCredentials: true
+      });
+    });
+  });
+
+  it("clears active filters and refetches the default filter set", async () => {
+    axiosMock.get.mockResolvedValue({ data: { tickets } });
+
+    renderWithQuery(<TicketsPage />);
+
+    expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Status"), "closed");
+    await waitFor(() => {
+      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
+        params: { ...defaultTicketParams, status: "closed" },
+        withCredentials: true
+      });
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+
+    await waitFor(() => {
+      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
+        params: defaultTicketParams,
+        withCredentials: true
+      });
+    });
+    expect(screen.getByLabelText("Status")).toHaveValue("all");
   });
 });

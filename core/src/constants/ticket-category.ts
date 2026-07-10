@@ -1,7 +1,10 @@
-export type TicketCategory =
-  | "general_question"
-  | "technical_question"
-  | "refund_request";
+export const ticketCategories = [
+  "general_question",
+  "technical_question",
+  "refund_request"
+] as const;
+
+export type TicketCategory = (typeof ticketCategories)[number];
 
 export const TicketCategory = {
   GeneralQuestion: "general_question",

@@ -1,8 +1,10 @@
+import type { TicketStatus } from "core";
+
 export enum UserRole {
   Admin = "admin",
   Agent = "agent"
 }
-export type TicketStatus = "open" | "resolved" | "closed";
+export type { TicketStatus };
 export type MessageDirection = "INBOUND" | "OUTBOUND";
 
 export type User = {

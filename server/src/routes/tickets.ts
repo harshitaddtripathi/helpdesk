@@ -1,6 +1,11 @@
 import { Router } from "express";
 import { MessageDirection, Prisma, TicketStatus } from "@prisma/client";
-import { ticketListQuerySchema, type TicketSortField } from "core/schemas/tickets";
+import {
+  ticketListQuerySchema,
+  type TicketListQuery,
+  type TicketSortField
+} from "core/schemas/tickets";
+import { ticketStatuses } from "core/constants/ticket-status";
 import { z } from "zod";
 import { asyncHandler, HttpError, requireStringParam, validate } from "../lib/http";
 import { prisma } from "../lib/prisma";
@@ -11,7 +16,7 @@ export const ticketsRouter = Router();
 ticketsRouter.use(requireAuth);
 
 const statusSchema = z
-  .enum(["open", "resolved", "closed"])
+  .enum(ticketStatuses)
   .transform((value) => value as TicketStatus);
 
 const createTicketSchema = z.object({
@@ -34,9 +39,10 @@ const replySchema = z.object({
 ticketsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
-    const { sortBy, sortOrder } = validate(ticketListQuerySchema, req.query);
+    const query = validate(ticketListQuerySchema, req.query);
     const tickets = await prisma.ticket.findMany({
-      orderBy: getTicketOrderBy(sortBy, sortOrder),
+      where: getTicketWhere(query),
+      orderBy: getTicketOrderBy(query.sortBy, query.sortOrder),
       select: {
         id: true,
         subject: true,
@@ -178,6 +184,36 @@ ticketsRouter.post(
     res.status(201).json({ message });
   })
 );
+
+function getTicketWhere(query: TicketListQuery) {
+  const filters: Prisma.TicketWhereInput[] = [];
+
+  if (query.search) {
+    filters.push({
+      OR: [
+        { subject: { contains: query.search, mode: "insensitive" } },
+        { senderName: { contains: query.search, mode: "insensitive" } },
+        { senderEmail: { contains: query.search, mode: "insensitive" } }
+      ]
+    });
+  }
+
+  if (query.status !== "all") {
+    filters.push({ status: query.status as TicketStatus });
+  }
+
+  if (query.category === "uncategorized") {
+    filters.push({ categoryId: null });
+  } else if (query.category !== "all") {
+    filters.push({ category: { slug: query.category } });
+  }
+
+  if (filters.length === 0) {
+    return undefined;
+  }
+
+  return { AND: filters } satisfies Prisma.TicketWhereInput;
+}
 
 function getTicketOrderBy(sortBy: TicketSortField, sortOrder: "asc" | "desc") {
   if (sortBy === "category") {

@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { ticketStatuses } from "core";
 import { useParams } from "react-router";
 import { apiFetch } from "../lib/api";
 import type { Category, Ticket } from "../types";
@@ -125,9 +126,11 @@ export function TicketDetailPage() {
               defaultValue={ticket.status}
               name="status"
             >
-              <option value="open">Open</option>
-              <option value="resolved">Resolved</option>
-              <option value="closed">Closed</option>
+              {ticketStatuses.map((status) => (
+                <option key={status} value={status}>
+                  {formatStatus(status)}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -164,4 +167,8 @@ export function TicketDetailPage() {
       </aside>
     </div>
   );
+}
+
+function formatStatus(status: string) {
+  return status.charAt(0).toUpperCase() + status.slice(1);
 }
