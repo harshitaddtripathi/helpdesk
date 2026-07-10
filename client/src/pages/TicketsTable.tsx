@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "../components/ui/alert";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Skeleton } from "../components/ui/skeleton";
+import { TextLink } from "../components/ui/text-link";
 import {
   Table,
   TableBody,
@@ -64,7 +65,7 @@ const columns: ColumnDef<TicketListItem>[] = [
     accessorKey: "subject",
     header: "Subject",
     cell: ({ row }) => (
-      <span className="font-medium text-slate-950">{row.original.subject}</span>
+      <TextLink to={`/tickets/${row.original.id}`}>{row.original.subject}</TextLink>
     )
   },
   {

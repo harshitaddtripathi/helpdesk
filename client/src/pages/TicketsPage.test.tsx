@@ -2,6 +2,7 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import axios from "axios";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router";
 import { renderWithQuery } from "../test/render-with-query";
 import type { Ticket } from "../types";
 import { TicketsPage } from "./TicketsPage";
@@ -51,11 +52,19 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+function renderTicketsPage() {
+  return renderWithQuery(
+    <MemoryRouter>
+      <TicketsPage />
+    </MemoryRouter>
+  );
+}
+
 describe("TicketsPage", () => {
   it("requests tickets with the default server sort", async () => {
     axiosMock.get.mockResolvedValue({ data: { tickets } });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
     expect(axiosMock.get).toHaveBeenCalledWith("/api/tickets", {
@@ -64,10 +73,21 @@ describe("TicketsPage", () => {
     });
   });
 
+  it("links each ticket subject to the ticket detail page", async () => {
+    axiosMock.get.mockResolvedValue({ data: { tickets } });
+
+    renderTicketsPage();
+
+    expect(await screen.findByRole("link", { name: "Refund request" })).toHaveAttribute(
+      "href",
+      "/tickets/1"
+    );
+  });
+
   it("refetches tickets sorted by a clicked column ascending", async () => {
     axiosMock.get.mockResolvedValue({ data: { tickets } });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
 
@@ -85,7 +105,7 @@ describe("TicketsPage", () => {
   it("toggles a clicked column from ascending to descending", async () => {
     axiosMock.get.mockResolvedValue({ data: { tickets } });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
 
@@ -111,7 +131,7 @@ describe("TicketsPage", () => {
   it("clears sorting on a third click and refetches the default sort", async () => {
     axiosMock.get.mockResolvedValue({ data: { tickets } });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
 
@@ -145,7 +165,7 @@ describe("TicketsPage", () => {
   it("filters tickets by status on the server", async () => {
     axiosMock.get.mockResolvedValue({ data: { tickets } });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
 
@@ -162,7 +182,7 @@ describe("TicketsPage", () => {
   it("filters tickets by category on the server", async () => {
     axiosMock.get.mockResolvedValue({ data: { tickets } });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
 
@@ -179,7 +199,7 @@ describe("TicketsPage", () => {
   it("filters tickets by search text on the server", async () => {
     axiosMock.get.mockResolvedValue({ data: { tickets } });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
 
@@ -196,7 +216,7 @@ describe("TicketsPage", () => {
   it("clears active filters and refetches the default filter set", async () => {
     axiosMock.get.mockResolvedValue({ data: { tickets } });
 
-    renderWithQuery(<TicketsPage />);
+    renderTicketsPage();
 
     expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
 
