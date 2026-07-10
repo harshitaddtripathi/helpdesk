@@ -44,6 +44,7 @@ export type Ticket = {
   senderName: string;
   status: TicketStatus;
   category?: Category | null;
+  assignedTo?: User | null;
   messages?: TicketMessage[];
   createdAt: string;
   updatedAt: string;

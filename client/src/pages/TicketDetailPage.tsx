@@ -2,12 +2,18 @@ import { FormEvent, useEffect, useState } from "react";
 import { ticketStatuses } from "core";
 import { useParams } from "react-router";
 import { apiFetch } from "../lib/api";
-import type { Category, Ticket } from "../types";
+import type { Category, Ticket, User } from "../types";
+
+type TicketDetailResponse = {
+  ticket: Ticket;
+  agents: User[];
+};
 
 export function TicketDetailPage() {
   const { ticketId } = useParams();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [agents, setAgents] = useState<User[]>([]);
   const [reply, setReply] = useState("");
   const [error, setError] = useState("");
 
@@ -15,11 +21,12 @@ export function TicketDetailPage() {
     if (!ticketId) return;
 
     void Promise.all([
-      apiFetch<{ ticket: Ticket }>(`/api/tickets/${ticketId}`),
+      apiFetch<TicketDetailResponse>(`/api/tickets/${ticketId}`),
       apiFetch<{ categories: Category[] }>("/api/categories")
     ])
       .then(([ticketResult, categoryResult]) => {
         setTicket(ticketResult.ticket);
+        setAgents(ticketResult.agents);
         setCategories(categoryResult.categories);
       })
       .catch((requestError) => {
@@ -34,7 +41,8 @@ export function TicketDetailPage() {
       method: "PATCH",
       body: JSON.stringify({
         status: formData.get("status"),
-        categorySlug: formData.get("categorySlug")
+        categorySlug: formData.get("categorySlug"),
+        assignedToId: formData.get("assignedToId")
       })
     });
 
@@ -77,6 +85,11 @@ export function TicketDetailPage() {
   if (!ticket) {
     return <p className="text-sm text-slate-500">Loading ticket...</p>;
   }
+
+  const agentOptions =
+    ticket.assignedTo && !agents.some((agent) => agent.id === ticket.assignedTo?.id)
+      ? [ticket.assignedTo, ...agents]
+      : agents;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -145,6 +158,22 @@ export function TicketDetailPage() {
               {categories.map((category) => (
                 <option key={category.id} value={category.slug}>
                   {category.name}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="mt-4 block text-sm font-medium text-slate-700">
+            Assigned agent
+            <select
+              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+              defaultValue={ticket.assignedTo?.id ?? ""}
+              name="assignedToId"
+            >
+              <option value="">Unassigned</option>
+              {agentOptions.map((agent) => (
+                <option key={agent.id} value={agent.id}>
+                  {agent.name} ({agent.email})
                 </option>
               ))}
             </select>

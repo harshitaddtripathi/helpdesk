@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { MessageDirection, Prisma, TicketStatus } from "@prisma/client";
+import { MessageDirection, Prisma, TicketStatus, UserRole } from "@prisma/client";
 import {
   ticketListQuerySchema,
   type TicketListQuery,
@@ -29,7 +29,8 @@ const createTicketSchema = z.object({
 
 const updateTicketSchema = z.object({
   status: statusSchema.optional(),
-  categorySlug: z.string().optional()
+  categorySlug: z.string().optional(),
+  assignedToId: z.string().optional()
 });
 
 const replySchema = z.object({
@@ -107,20 +108,46 @@ ticketsRouter.get(
   "/:id",
   asyncHandler(async (req, res) => {
     const ticketId = requireNumberParam(req.params.id, "id");
-    const ticket = await prisma.ticket.findUnique({
-      where: { id: ticketId },
-      include: {
-        category: true,
-        messages: { orderBy: { createdAt: "asc" } },
-        aiOutputs: { orderBy: { createdAt: "desc" } }
-      }
-    });
+    const [ticket, agents] = await prisma.$transaction([
+      prisma.ticket.findUnique({
+        where: { id: ticketId },
+        include: {
+          category: true,
+          assignedTo: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              role: true,
+              active: true
+            }
+          },
+          messages: { orderBy: { createdAt: "asc" } },
+          aiOutputs: { orderBy: { createdAt: "desc" } }
+        }
+      }),
+      prisma.user.findMany({
+        where: {
+          role: UserRole.agent,
+          active: true,
+          deletedAt: null
+        },
+        orderBy: { name: "asc" },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          active: true
+        }
+      })
+    ]);
 
     if (!ticket) {
       throw new HttpError(404, "Ticket not found.");
     }
 
-    res.json({ ticket });
+    res.json({ ticket, agents });
   })
 );
 
@@ -147,10 +174,45 @@ ticketsRouter.patch(
       data.category = { connect: { id: category.id } };
     }
 
+    if (body.assignedToId !== undefined) {
+      const assignedToId = body.assignedToId.trim();
+
+      if (!assignedToId) {
+        data.assignedTo = { disconnect: true };
+      } else {
+        const agent = await prisma.user.findFirst({
+          where: {
+            id: assignedToId,
+            role: UserRole.agent,
+            active: true,
+            deletedAt: null
+          },
+          select: { id: true }
+        });
+
+        if (!agent) {
+          throw new HttpError(400, "Unknown active agent.");
+        }
+
+        data.assignedTo = { connect: { id: agent.id } };
+      }
+    }
+
     const ticket = await prisma.ticket.update({
       where: { id: ticketId },
       data,
-      include: { category: true }
+      include: {
+        category: true,
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true
+          }
+        }
+      }
     });
 
     res.json({ ticket });
