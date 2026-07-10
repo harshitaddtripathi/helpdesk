@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { MessageDirection, Prisma, TicketStatus } from "@prisma/client";
+import { ticketListQuerySchema, type TicketSortField } from "core/schemas/tickets";
 import { z } from "zod";
-import { asyncHandler, HttpError, requireStringParam } from "../lib/http";
+import { asyncHandler, HttpError, requireStringParam, validate } from "../lib/http";
 import { prisma } from "../lib/prisma";
 import { requireAuth } from "../middleware/require-auth";
 
@@ -32,11 +33,10 @@ const replySchema = z.object({
 
 ticketsRouter.get(
   "/",
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
+    const { sortBy, sortOrder } = validate(ticketListQuerySchema, req.query);
     const tickets = await prisma.ticket.findMany({
-      orderBy: {
-        createdAt: "desc"
-      },
+      orderBy: getTicketOrderBy(sortBy, sortOrder),
       select: {
         id: true,
         subject: true,
@@ -178,6 +178,14 @@ ticketsRouter.post(
     res.status(201).json({ message });
   })
 );
+
+function getTicketOrderBy(sortBy: TicketSortField, sortOrder: "asc" | "desc") {
+  if (sortBy === "category") {
+    return { category: { name: sortOrder } } satisfies Prisma.TicketOrderByWithRelationInput;
+  }
+
+  return { [sortBy]: sortOrder } satisfies Prisma.TicketOrderByWithRelationInput;
+}
 
 function requireNumberParam(value: string | string[] | undefined, name: string) {
   const stringValue = requireStringParam(value, name);

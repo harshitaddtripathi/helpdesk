@@ -1,4 +1,5 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
+import type { z } from "zod";
 
 export class HttpError extends Error {
   constructor(
@@ -31,4 +32,11 @@ export function requireStringParam(
   }
 
   throw new HttpError(400, `Missing or invalid route parameter: ${name}.`);
+}
+
+export function validate<TSchema extends z.ZodTypeAny>(
+  schema: TSchema,
+  value: unknown
+): z.infer<TSchema> {
+  return schema.parse(value);
 }
