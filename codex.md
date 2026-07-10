@@ -52,11 +52,13 @@ The client proxies `/api/*` requests to the server via `vite.config.ts`.
 - Keep API routes under `/api/*`.
 - Use Prisma for database access and migrations.
 - Define shared Zod schemas in the `core` package and import them into both client and server code instead of duplicating validation rules. Keep user-related endpoints in `server/src/routes/users.ts`.
+- For string-valued shared constants in `core/src/constants`, declare an explicit string-literal union type and pair it with a checked runtime constant object. Prefer this pattern over TypeScript enums for ticket constants such as status and category.
 - Use React Hook Form with Zod schemas and `zodResolver` for client-side add-user form validation.
 - Use the Prisma `UserRole` enum for role assignments and comparisons in server code; do not hardcode role string literals such as `"agent"` or `"admin"` when implementing authorization or user creation.
 - In the React client, use Axios for HTTP requests and TanStack Query for server-state fetching, caching, mutations, and invalidation. Avoid adding new raw `fetch` calls for API data unless there is a specific reason.
-- Write React component tests with Vitest and React Testing Library. Keep tests close to the component or page under test, use user-facing queries where practical, and use `client/src/test/render-with-query.tsx` for components that depend on TanStack Query.
+- Prefer React component tests with Vitest and React Testing Library for most UI behavior. Keep tests close to the component or page under test, use user-facing queries where practical, and use `client/src/test/render-with-query.tsx` for components that depend on TanStack Query.
 - Run `bun run test:component` from the repo root before finishing component-test changes. Use `cd client && bun run test:component` for Vitest watch mode while writing tests.
+- Use Playwright E2E tests only when component tests cannot cover the behavior well, such as full authentication flows, browser-level routing, multi-page workflows, or integration with the real server/database.
 - Auth rate limiting is enabled only in production. Development and test environments bypass the auth rate limiter.
 - Use the `$e2e-test-writer` project agent when writing, updating, or debugging Playwright E2E tests.
 

@@ -1,7 +1,7 @@
-export const TicketStatus = {
+export type TicketStatus = "open" | "resolved" | "closed";
+
+export const TicketStatus: Record<TicketStatus, TicketStatus> = {
   open: "open",
   resolved: "resolved",
   closed: "closed"
 } as const;
-
-export type TicketStatus = (typeof TicketStatus)[keyof typeof TicketStatus];
