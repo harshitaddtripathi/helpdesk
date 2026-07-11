@@ -1,8 +1,11 @@
+import "dotenv/config";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, UserRole } from "@prisma/client";
 import { generateId } from "@better-auth/core/utils/id";
 import { hashPassword } from "better-auth/crypto";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: requireEnv("DATABASE_URL") });
+const prisma = new PrismaClient({ adapter });
 
 type SeedUser = {
   email: string;

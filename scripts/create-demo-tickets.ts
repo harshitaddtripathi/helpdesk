@@ -1,6 +1,19 @@
+import "dotenv/config";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, TicketStatus } from "@prisma/client";
 
-const prisma = new PrismaClient();
+function requireEnv(name: string) {
+  const value = process.env[name]?.trim();
+
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+
+  return value;
+}
+
+const adapter = new PrismaPg({ connectionString: requireEnv("DATABASE_URL") });
+const prisma = new PrismaClient({ adapter });
 
 const demoBatchPrefix = "demo-ticket-";
 
