@@ -14,7 +14,9 @@ import {
   getTicketPolishContext,
   polishReply
 } from "../lib/reply-polisher";
+import { formatCustomerReply, supportReplySignature } from "../lib/customer-reply-format";
 import { requireAuth } from "../middleware/require-auth";
+import { autoResolveTicketById, isAiAutoResolutionOutputFilter } from "../lib/ticket-auto-resolver";
 
 export const ticketsRouter = Router();
 
@@ -107,6 +109,10 @@ ticketsRouter.post(
         category: true,
         messages: true
       }
+    });
+
+    void autoResolveTicketById(ticket.id).catch((error) => {
+      console.warn(`Failed to auto-resolve ticket ${ticket.id}:`, error);
     });
 
     res.status(201).json({ ticket });
@@ -249,7 +255,7 @@ ticketsRouter.post(
         fromEmail: req.user?.email ?? "agent",
         toEmail: ticket.senderEmail,
         subject: `Re: ${ticket.subject}`,
-        bodyText: body.bodyText
+        bodyText: formatCustomerReply(body.bodyText, ticket.senderName)
       }
     });
 
@@ -271,13 +277,19 @@ ticketsRouter.post(
     ensureReplyPolisherConfigured();
 
     res.json({
-      reply: await polishReply(ticket, body.draft, req.user?.name ?? req.user?.email ?? "Support team")
+      reply: await polishReply(ticket, body.draft, supportReplySignature)
     });
   })
 );
 
 function getTicketWhere(query: TicketListQuery) {
-  const filters: Prisma.TicketWhereInput[] = [];
+  const filters: Prisma.TicketWhereInput[] = [
+    {
+      aiOutputs: {
+        none: isAiAutoResolutionOutputFilter()
+      }
+    }
+  ];
 
   if (query.search) {
     filters.push({
@@ -299,9 +311,6 @@ function getTicketWhere(query: TicketListQuery) {
     filters.push({ category: { slug: query.category } });
   }
 
-  if (filters.length === 0) {
-    return undefined;
-  }
 
   return { AND: filters } satisfies Prisma.TicketWhereInput;
 }

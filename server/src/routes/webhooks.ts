@@ -3,6 +3,7 @@ import { inboundEmailSchema } from "core/schemas/tickets";
 import { MessageDirection, TicketStatus } from "@prisma/client";
 import { asyncHandler } from "../lib/http";
 import { prisma } from "../lib/prisma";
+import { autoResolveTicketById } from "../lib/ticket-auto-resolver";
 import { enqueueTicketClassification } from "../lib/ticket-classification-queue";
 import { requireWebhookSecret } from "../middleware/require-webhook-secret";
 
@@ -47,6 +48,10 @@ webhooksRouter.post(
         });
       }
 
+      void autoResolveTicketById(existingTicket.id).catch((error) => {
+        console.warn(`Failed to auto-resolve ticket ${existingTicket.id}:`, error);
+      });
+
       res.status(200).json({ ticket: existingTicket, message });
       return;
     }
@@ -76,6 +81,10 @@ webhooksRouter.post(
 
     void enqueueTicketClassification(ticket.id).catch((error) => {
       console.warn(`Failed to enqueue ticket classification for ticket ${ticket.id}:`, error);
+    });
+
+    void autoResolveTicketById(ticket.id).catch((error) => {
+      console.warn(`Failed to auto-resolve ticket ${ticket.id}:`, error);
     });
 
     res.status(201).json({ ticket });

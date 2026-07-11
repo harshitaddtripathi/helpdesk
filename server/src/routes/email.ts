@@ -5,6 +5,7 @@ import { z } from "zod";
 import { env } from "../lib/env";
 import { asyncHandler, HttpError } from "../lib/http";
 import { prisma } from "../lib/prisma";
+import { autoResolveTicketById } from "../lib/ticket-auto-resolver";
 
 export const emailRouter = Router();
 
@@ -43,6 +44,10 @@ emailRouter.post(
         }
       });
 
+      void autoResolveTicketById(existingTicket.id).catch((error) => {
+        console.warn(`Failed to auto-resolve ticket ${existingTicket.id}:`, error);
+      });
+
       res.status(201).json({ ticketId: existingTicket.id, message });
       return;
     }
@@ -66,6 +71,10 @@ emailRouter.post(
         }
       },
       include: { messages: true, category: true }
+    });
+
+    void autoResolveTicketById(ticket.id).catch((error) => {
+      console.warn(`Failed to auto-resolve ticket ${ticket.id}:`, error);
     });
 
     res.status(201).json({ ticket });
