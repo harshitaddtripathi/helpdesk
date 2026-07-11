@@ -1,9 +1,11 @@
 import { FormEvent, useEffect, useState } from "react";
+import { Sparkles } from "lucide-react";
 import { useParams } from "react-router";
 import { ReplyThread } from "../components/tickets/ReplyThread";
 import { TicketDetail } from "../components/tickets/TicketDetail";
 import { UpdateTicket } from "../components/tickets/UpdateTicket";
 import { BackLink } from "../components/ui/back-link";
+import { Button } from "../components/ui/button";
 import { apiFetch } from "../lib/api";
 import type { Category, Ticket, User } from "../types";
 
@@ -19,6 +21,7 @@ export function TicketDetailPage() {
   const [agents, setAgents] = useState<User[]>([]);
   const [reply, setReply] = useState("");
   const [replyError, setReplyError] = useState("");
+  const [isPolishingReply, setIsPolishingReply] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -87,6 +90,34 @@ export function TicketDetailPage() {
     }
   }
 
+  async function handlePolishReply() {
+    if (!ticketId) return;
+    if (!reply.trim()) {
+      setReplyError("Write a message before polishing your reply.");
+      return;
+    }
+
+    setError("");
+    setReplyError("");
+    setIsPolishingReply(true);
+
+    try {
+      const result = await apiFetch<{ reply: string }>("/api/ai/polish-reply", {
+        method: "POST",
+        body: JSON.stringify({
+          ticketId,
+          draft: reply
+        })
+      });
+
+      setReply(result.reply);
+    } catch (requestError) {
+      setReplyError(requestError instanceof Error ? requestError.message : "Failed to polish reply.");
+    } finally {
+      setIsPolishingReply(false);
+    }
+  }
+
   if (error) {
     return <p className="text-sm text-red-600">{error}</p>;
   }
@@ -120,9 +151,20 @@ export function TicketDetailPage() {
               />
             </label>
             {replyError ? <p className="mt-2 text-sm text-red-600">{replyError}</p> : null}
-            <button className="mt-3 rounded-full bg-slate-950 px-4 py-2 text-sm text-white" type="submit">
-              Send reply
-            </button>
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <Button
+                disabled={isPolishingReply || !reply.trim()}
+                onClick={handlePolishReply}
+                type="button"
+                variant="ghost"
+              >
+                <Sparkles aria-hidden="true" className="h-4 w-4" />
+                {isPolishingReply ? "Polishing..." : "Polish"}
+              </Button>
+              <Button disabled={isPolishingReply} type="submit">
+                Send reply
+              </Button>
+            </div>
           </form>
         </section>
 

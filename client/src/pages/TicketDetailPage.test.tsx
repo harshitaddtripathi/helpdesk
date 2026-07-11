@@ -74,11 +74,15 @@ function renderTicketDetailPage() {
 function mockTicketDetailRequests({
   savedTicket = ticket,
   ticketDetail = ticket,
-  replyError
+  replyError,
+  polishError,
+  polishedReply = "We can help with that and will review your refund request."
 }: {
   savedTicket?: Ticket;
   ticketDetail?: Ticket;
   replyError?: Error;
+  polishError?: Error;
+  polishedReply?: string;
 } = {}) {
   apiFetchMock.mockImplementation(async (path, options) => {
     if (path === "/api/tickets/1" && options?.method === "PATCH") {
@@ -103,6 +107,14 @@ function mockTicketDetailRequests({
           createdAt: "2026-07-01T12:05:00.000Z"
         }
       };
+    }
+
+    if (path === "/api/ai/polish-reply" && options?.method === "POST") {
+      if (polishError) {
+        throw polishError;
+      }
+
+      return { reply: polishedReply };
     }
 
     if (path === "/api/tickets/1") {
@@ -280,5 +292,37 @@ describe("TicketDetailPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Send reply" }));
 
     expect(await screen.findByText("Failed to send test reply.")).toBeInTheDocument();
+  });
+
+  it("polishes a draft reply", async () => {
+    mockTicketDetailRequests();
+
+    renderTicketDetailPage();
+
+    const replyInput = await screen.findByLabelText("Reply");
+    await userEvent.type(replyInput, "refund ok");
+    await userEvent.click(screen.getByRole("button", { name: "Polish" }));
+
+    await waitFor(() => {
+      expect(apiFetchMock).toHaveBeenCalledWith("/api/ai/polish-reply", {
+        method: "POST",
+        body: JSON.stringify({
+          ticketId: "1",
+          draft: "refund ok"
+        })
+      });
+    });
+    expect(replyInput).toHaveValue("We can help with that and will review your refund request.");
+  });
+
+  it("shows an error when polishing a reply fails", async () => {
+    mockTicketDetailRequests({ polishError: new Error("Failed to polish test reply.") });
+
+    renderTicketDetailPage();
+
+    await userEvent.type(await screen.findByLabelText("Reply"), "refund ok");
+    await userEvent.click(screen.getByRole("button", { name: "Polish" }));
+
+    expect(await screen.findByText("Failed to polish test reply.")).toBeInTheDocument();
   });
 });
