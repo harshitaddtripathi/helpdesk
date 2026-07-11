@@ -114,19 +114,7 @@ export async function classifyTicket(ticket: TicketClassificationContext): Promi
   };
 }
 
-export function classifyTicketInBackground(ticketId: number) {
-  if (!env.OPENAI_API_KEY) {
-    return;
-  }
-
-  setTimeout(() => {
-    void classifyTicketById(ticketId).catch((error) => {
-      console.warn(`Ticket classification failed for ticket ${ticketId}:`, getBackgroundErrorMessage(error));
-    });
-  }, 0);
-}
-
-async function classifyTicketById(ticketId: number) {
+export async function classifyTicketById(ticketId: number) {
   const ticket = await getTicketClassificationContext(ticketId);
 
   if (!ticket) {
@@ -253,12 +241,4 @@ function getAiErrorMessage(error: APICallError) {
   }
 
   return "OpenAI could not classify the ticket.";
-}
-
-function getBackgroundErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return String(error);
 }

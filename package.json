@@ -38,6 +38,7 @@
     "cors": "^2.8.5",
     "express": "^5.0.0",
     "lucide-react": "^1.23.0",
+    "pg-boss": "^12.26.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.81.0",

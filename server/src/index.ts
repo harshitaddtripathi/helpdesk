@@ -13,6 +13,7 @@ import { usersRouter } from "./routes/users";
 import { webhooksRouter } from "./routes/webhooks";
 import { auth } from "./lib/auth";
 import { env } from "./lib/env";
+import { startTicketClassificationWorker } from "./lib/ticket-classification-queue";
 import { errorHandler } from "./middleware/error-handler";
 import { authRateLimiter } from "./middleware/rate-limit";
 import { requireAuth } from "./middleware/require-auth";
@@ -43,6 +44,10 @@ app.use(cookieParser());
 if (!env.WEBHOOK_SECRET) {
   console.warn("WEBHOOK_SECRET is not set; inbound email webhooks will reject requests.");
 }
+
+void startTicketClassificationWorker().catch((error) => {
+  console.warn("Ticket classification worker failed to start:", error);
+});
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

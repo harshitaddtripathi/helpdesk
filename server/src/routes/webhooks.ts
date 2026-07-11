@@ -3,7 +3,7 @@ import { inboundEmailSchema } from "core/schemas/tickets";
 import { MessageDirection, TicketStatus } from "@prisma/client";
 import { asyncHandler } from "../lib/http";
 import { prisma } from "../lib/prisma";
-import { classifyTicketInBackground } from "../lib/ticket-classifier";
+import { enqueueTicketClassification } from "../lib/ticket-classification-queue";
 import { requireWebhookSecret } from "../middleware/require-webhook-secret";
 
 export const webhooksRouter = Router();
@@ -42,7 +42,9 @@ webhooksRouter.post(
       });
 
       if (!existingTicket.categoryId) {
-        classifyTicketInBackground(existingTicket.id);
+        void enqueueTicketClassification(existingTicket.id).catch((error) => {
+          console.warn(`Failed to enqueue ticket classification for ticket ${existingTicket.id}:`, error);
+        });
       }
 
       res.status(200).json({ ticket: existingTicket, message });
@@ -72,7 +74,9 @@ webhooksRouter.post(
       }
     });
 
-    classifyTicketInBackground(ticket.id);
+    void enqueueTicketClassification(ticket.id).catch((error) => {
+      console.warn(`Failed to enqueue ticket classification for ticket ${ticket.id}:`, error);
+    });
 
     res.status(201).json({ ticket });
   })
