@@ -82,7 +82,14 @@ export async function autoResolveTicket(ticket: AutoResolutionTicket): Promise<A
     return { resolved: false, reason: "No active knowledge base articles are available." };
   }
 
-  const decision = await generateAutoResolutionDecision(ticket, candidates);
+  let decision: AutoResolutionDecision;
+  try {
+    decision = await generateAutoResolutionDecision(ticket, candidates);
+  } catch (error) {
+    await resetTicketStatusToOpen(ticket.id);
+    throw error;
+  }
+
   const reply = decision.reply?.trim()
     ? formatCustomerReply(decision.reply, ticket.senderName)
     : "";
@@ -103,6 +110,17 @@ export async function autoResolveTicket(ticket: AutoResolutionTicket): Promise<A
     articleId: article.id,
     reply
   };
+}
+
+async function resetTicketStatusToOpen(ticketId: number) {
+  await prisma.ticket.updateMany({
+    where: {
+      id: ticketId
+    },
+    data: {
+      status: TicketStatus.open
+    }
+  });
 }
 
 async function getAutoResolutionContext(ticketId: number) {

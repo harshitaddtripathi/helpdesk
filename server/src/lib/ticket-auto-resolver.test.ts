@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
     OPENAI_API_KEY: "test-openai-key"
   },
   findUniqueTicket: vi.fn(),
+  updateManyTicketStatus: vi.fn(),
   findManyArticles: vi.fn(),
   transaction: vi.fn(),
   updateManyTickets: vi.fn(),
@@ -29,7 +30,8 @@ vi.mock("./env", () => ({
 vi.mock("./prisma", () => ({
   prisma: {
     ticket: {
-      findUnique: mocks.findUniqueTicket
+      findUnique: mocks.findUniqueTicket,
+      updateMany: mocks.updateManyTicketStatus
     },
     knowledgeBaseArticle: {
       findMany: mocks.findManyArticles
@@ -54,6 +56,7 @@ vi.mock("ai", async () => {
 const generateTextMock = vi.mocked(generateText);
 const openaiMock = vi.mocked(openai);
 const findUniqueTicketMock = vi.mocked(prisma.ticket.findUnique);
+const updateManyTicketStatusMock = vi.mocked(prisma.ticket.updateMany);
 const findManyArticlesMock = vi.mocked(prisma.knowledgeBaseArticle.findMany);
 const transactionMock = vi.mocked(prisma.$transaction);
 
@@ -110,6 +113,7 @@ beforeEach(() => {
   mocks.env.OPENAI_API_KEY = "test-openai-key";
   vi.clearAllMocks();
   findUniqueTicketMock.mockResolvedValue(ticket);
+  updateManyTicketStatusMock.mockResolvedValue({ count: 1 } as Awaited<ReturnType<typeof prisma.ticket.updateMany>>);
   findManyArticlesMock.mockResolvedValue([article]);
   mocks.updateManyTickets.mockResolvedValue({ count: 1 });
   mocks.createMessage.mockResolvedValue({});
@@ -273,6 +277,15 @@ describe("ticket auto resolver", () => {
     await expect(autoResolveTicketById(42)).rejects.toMatchObject({
       status: 503,
       message: "OpenAI rate limit or quota was reached. Try again later or check billing."
+    });
+
+    expect(updateManyTicketStatusMock).toHaveBeenCalledWith({
+      where: {
+        id: 42
+      },
+      data: {
+        status: "open"
+      }
     });
   });
 });
