@@ -109,7 +109,7 @@ function mockTicketDetailRequests({
       };
     }
 
-    if (path === "/api/ai/polish-reply" && options?.method === "POST") {
+    if (path === "/api/tickets/1/replies/polish" && options?.method === "POST") {
       if (polishError) {
         throw polishError;
       }
@@ -216,34 +216,31 @@ describe("TicketDetailPage", () => {
     });
   });
 
-  it("shows an error when sending an empty reply", async () => {
+  it("disables sending when the reply is empty", async () => {
     mockTicketDetailRequests();
 
     renderTicketDetailPage();
 
     await screen.findByRole("heading", { name: "Refund request" });
-    await userEvent.click(screen.getByRole("button", { name: "Send reply" }));
 
-    expect(screen.getByText("Write a message before sending your reply.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send reply" })).toBeDisabled();
     expect(apiFetchMock).not.toHaveBeenCalledWith(
       "/api/tickets/1/replies",
       expect.objectContaining({ method: "POST" })
     );
   });
 
-  it("clears the empty reply error when typing a message", async () => {
+  it("enables sending after typing a reply", async () => {
     mockTicketDetailRequests();
 
     renderTicketDetailPage();
 
     await screen.findByRole("heading", { name: "Refund request" });
-    await userEvent.click(screen.getByRole("button", { name: "Send reply" }));
-
-    expect(screen.getByText("Write a message before sending your reply.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send reply" })).toBeDisabled();
 
     await userEvent.type(screen.getByLabelText("Reply"), "We can help with that.");
 
-    expect(screen.queryByText("Write a message before sending your reply.")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send reply" })).toBeEnabled();
   });
 
   it("submits a reply and clears the reply textarea", async () => {
@@ -304,12 +301,9 @@ describe("TicketDetailPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Polish" }));
 
     await waitFor(() => {
-      expect(apiFetchMock).toHaveBeenCalledWith("/api/ai/polish-reply", {
+      expect(apiFetchMock).toHaveBeenCalledWith("/api/tickets/1/replies/polish", {
         method: "POST",
-        body: JSON.stringify({
-          ticketId: "1",
-          draft: "refund ok"
-        })
+        body: JSON.stringify({ draft: "refund ok" })
       });
     });
     expect(replyInput).toHaveValue("We can help with that and will review your refund request.");

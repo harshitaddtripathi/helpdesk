@@ -9,6 +9,11 @@ import { ticketStatuses } from "core/constants/ticket-status";
 import { z } from "zod";
 import { asyncHandler, HttpError, requireStringParam, validate } from "../lib/http";
 import { prisma } from "../lib/prisma";
+import {
+  ensureReplyPolisherConfigured,
+  getTicketPolishContext,
+  polishReply
+} from "../lib/reply-polisher";
 import { requireAuth } from "../middleware/require-auth";
 
 export const ticketsRouter = Router();
@@ -35,6 +40,10 @@ const updateTicketSchema = z.object({
 
 const replySchema = z.object({
   bodyText: z.string().min(1)
+});
+
+const polishReplySchema = z.object({
+  draft: z.string().trim().min(1).max(4000)
 });
 
 ticketsRouter.get(
@@ -245,6 +254,25 @@ ticketsRouter.post(
     });
 
     res.status(201).json({ message });
+  })
+);
+
+ticketsRouter.post(
+  "/:id/replies/polish",
+  asyncHandler(async (req, res) => {
+    const ticketId = requireNumberParam(req.params.id, "id");
+    const body = polishReplySchema.parse(req.body);
+    const ticket = await getTicketPolishContext(ticketId);
+
+    if (!ticket) {
+      throw new HttpError(404, "Ticket not found.");
+    }
+
+    ensureReplyPolisherConfigured();
+
+    res.json({
+      reply: await polishReply(ticket, body.draft, req.user?.name ?? req.user?.email ?? "Support team")
+    });
   })
 );
 

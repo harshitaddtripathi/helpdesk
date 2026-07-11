@@ -71,7 +71,6 @@ export function TicketDetailPage() {
     event.preventDefault();
     if (!ticketId) return;
     if (!reply.trim()) {
-      setReplyError("Write a message before sending your reply.");
       return;
     }
     setError("");
@@ -102,12 +101,9 @@ export function TicketDetailPage() {
     setIsPolishingReply(true);
 
     try {
-      const result = await apiFetch<{ reply: string }>("/api/ai/polish-reply", {
+      const result = await apiFetch<{ reply: string }>(`/api/tickets/${ticketId}/replies/polish`, {
         method: "POST",
-        body: JSON.stringify({
-          ticketId,
-          draft: reply
-        })
+        body: JSON.stringify({ draft: reply })
       });
 
       setReply(result.reply);
@@ -161,7 +157,7 @@ export function TicketDetailPage() {
                 <Sparkles aria-hidden="true" className="h-4 w-4" />
                 {isPolishingReply ? "Polishing..." : "Polish"}
               </Button>
-              <Button disabled={isPolishingReply} type="submit">
+              <Button disabled={isPolishingReply || !reply.trim()} type="submit">
                 Send reply
               </Button>
             </div>
