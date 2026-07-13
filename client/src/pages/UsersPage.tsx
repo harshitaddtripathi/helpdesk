@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 import { CreateUserForm } from "../components/users/CreateUserForm";
 import { UsersTable } from "../components/users/UsersTable";
 import { Alert, AlertDescription } from "../components/ui/alert";
@@ -87,14 +88,23 @@ export function UsersPage() {
   }, [userFormDialog]);
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Users</h1>
+    <div className="space-y-5">
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+            Administration
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Users</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Manage agent access and support team permissions.
+          </p>
+        </div>
         <button
-          className="rounded-md bg-slate-950 px-4 py-2 text-sm text-white"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-blue-600 px-4 text-sm font-semibold text-white shadow-sm shadow-blue-950/10 transition-colors hover:bg-blue-700"
           onClick={() => setUserFormDialog({ mode: "create" })}
           type="button"
         >
+          <Plus aria-hidden="true" className="h-4 w-4" />
           Create agent
         </button>
       </div>

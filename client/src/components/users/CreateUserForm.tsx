@@ -10,8 +10,8 @@ import type { UserListItem } from "../../types";
 import { Alert, AlertDescription } from "../ui/alert";
 
 const inputClassName = (hasError: boolean) =>
-  `mt-1 w-full rounded-md border px-3 py-2 outline-none ${
-    hasError ? "border-red-500 focus:border-red-600" : "border-slate-300 focus:border-slate-950"
+  `field-control mt-1 h-10 w-full rounded-md px-3 text-sm ${
+    hasError ? "border-red-500 focus:border-red-600" : ""
   }`;
 
 const createUserFormSchema = z.object({
@@ -140,11 +140,11 @@ export function CreateUserForm(props: UserFormProps) {
     <form
       aria-labelledby={headingId}
       autoComplete="off"
-      className="rounded-lg border border-slate-200 bg-white p-4"
+      className="panel-surface rounded-lg p-4"
       noValidate
       onSubmit={handleSubmit(handleSave, () => setFormError(""))}
     >
-      <h2 className="text-lg font-semibold text-slate-950" id={headingId}>
+      <h2 className="text-lg font-semibold tracking-tight text-slate-950" id={headingId}>
         {formHeading}
       </h2>
 
@@ -205,7 +205,7 @@ export function CreateUserForm(props: UserFormProps) {
       ) : null}
 
       <button
-        className="mt-4 rounded-md bg-slate-950 px-4 py-2 text-sm text-white disabled:opacity-60"
+        className="mt-4 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
         type="submit"
         disabled={saveUserMutation.isPending}
       >

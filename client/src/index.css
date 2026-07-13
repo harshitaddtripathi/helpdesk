@@ -1,1 +1,205 @@
 @import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --font-ui: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-data: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --color-ink: #111827;
+  --color-muted: #64748b;
+  --color-page: #f7f8fa;
+  --color-panel: #ffffff;
+  --color-line: #dfe5ee;
+  --color-action: #2563eb;
+  --color-teal: #0d9488;
+  --color-amber: #d97706;
+  --shadow-panel: 0 1px 2px rgba(15, 23, 42, 0.04), 0 18px 48px rgba(15, 23, 42, 0.06);
+}
+
+:root.dark {
+  color-scheme: dark;
+  --color-ink: #e5e7eb;
+  --color-muted: #94a3b8;
+  --color-page: #0b1120;
+  --color-panel: #111827;
+  --color-line: #263244;
+  --color-action: #60a5fa;
+  --color-teal: #2dd4bf;
+  --color-amber: #fbbf24;
+  --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.32), 0 20px 54px rgba(0, 0, 0, 0.28);
+}
+
+html {
+  background: var(--color-page);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    linear-gradient(180deg, rgba(37, 99, 235, 0.06), rgba(37, 99, 235, 0) 360px),
+    var(--color-page);
+  color: var(--color-ink);
+  font-family: var(--font-ui);
+  text-rendering: geometricPrecision;
+}
+
+:root.dark body {
+  background:
+    linear-gradient(180deg, rgba(37, 99, 235, 0.16), rgba(37, 99, 235, 0) 360px),
+    var(--color-page);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(37, 99, 235, 0.16);
+}
+
+.font-data {
+  font-family: var(--font-data);
+}
+
+.panel-surface {
+  border: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-panel) 92%, transparent);
+  box-shadow: var(--shadow-panel);
+}
+
+.field-control {
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-ink);
+  outline: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.field-control:focus {
+  border-color: rgba(37, 99, 235, 0.7);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+  background: #ffffff;
+}
+
+.chart-bar {
+  transform: scaleY(0);
+  transform-origin: bottom;
+  animation: chart-bar-rise 780ms cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes chart-bar-rise {
+  from {
+    transform: scaleY(0);
+  }
+
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-bar {
+    animation: none;
+    transform: none;
+  }
+}
+
+:root.dark .field-control {
+  border-color: rgba(100, 116, 139, 0.62);
+  background: rgba(15, 23, 42, 0.88);
+  color: #f8fafc;
+}
+
+:root.dark .field-control option {
+  background: #111827;
+  color: #f8fafc;
+}
+
+:root.dark .theme-toggle {
+  border-color: rgba(100, 116, 139, 0.6);
+  background: rgba(15, 23, 42, 0.92);
+  color: #e2e8f0;
+}
+
+:root.dark .theme-toggle:hover {
+  background: rgba(30, 41, 59, 0.96);
+}
+
+:root.dark .bg-white,
+:root.dark .bg-slate-50,
+:root.dark .bg-slate-50\/60,
+:root.dark .bg-slate-50\/80,
+:root.dark .bg-white\/80,
+:root.dark .bg-white\/90 {
+  background-color: #111827;
+}
+
+:root.dark .bg-slate-100,
+:root.dark .hover\:bg-slate-100:hover,
+:root.dark .hover\:bg-slate-50:hover {
+  background-color: #1e293b;
+}
+
+:root.dark .bg-blue-50 {
+  background-color: rgba(30, 64, 175, 0.24);
+}
+
+:root.dark .bg-teal-50,
+:root.dark .bg-emerald-50 {
+  background-color: rgba(13, 148, 136, 0.2);
+}
+
+:root.dark .text-slate-950,
+:root.dark .text-slate-900,
+:root.dark .text-slate-700 {
+  color: #f8fafc;
+}
+
+:root.dark .text-slate-600,
+:root.dark .text-slate-500 {
+  color: #94a3b8;
+}
+
+:root.dark .text-slate-400 {
+  color: #64748b;
+}
+
+:root.dark .text-blue-600,
+:root.dark .text-blue-700,
+:root.dark .text-blue-950 {
+  color: #93c5fd;
+}
+
+:root.dark .text-teal-900,
+:root.dark .text-teal-950,
+:root.dark .text-emerald-700 {
+  color: #99f6e4;
+}
+
+:root.dark .border-slate-200,
+:root.dark .border-slate-200\/80,
+:root.dark .border-slate-300,
+:root.dark .border-slate-100 {
+  border-color: #263244;
+}
+
+:root.dark .border-blue-200 {
+  border-color: rgba(96, 165, 250, 0.36);
+}
+
+:root.dark .border-teal-200,
+:root.dark .border-emerald-200 {
+  border-color: rgba(45, 212, 191, 0.32);
+}
+
+:root.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #263244;
+}
+
+:root.dark .shadow-slate-950\/10,
+:root.dark .shadow-blue-950\/10 {
+  box-shadow: none;
+}

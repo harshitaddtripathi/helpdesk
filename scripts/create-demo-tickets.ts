@@ -16,6 +16,7 @@ const adapter = new PrismaPg({ connectionString: requireEnv("DATABASE_URL") });
 const prisma = new PrismaClient({ adapter });
 
 const demoBatchPrefix = "demo-ticket-";
+const dailyTicketCounts = [5, 3, 8, 2, 6, 9, 4, 7, 12, 5, 10, 3, 8, 6, 12] as const;
 
 const categories = [
   { name: "General Question", slug: "general_question" },
@@ -196,40 +197,54 @@ async function main() {
   });
 
   const createdTickets = [];
-  const baseDate = new Date("2026-07-10T09:00:00.000Z");
+  const baseDate = new Date();
+  baseDate.setUTCHours(9, 0, 0, 0);
+  let ticketIndex = 0;
 
-  for (let index = 0; index < 100; index += 1) {
-    const [subject, categorySlug] = scenarios[index]!;
-    const [senderName, senderEmail] = senders[index % senders.length]!;
-    const isUncategorized = index % 17 === 0;
-    const createdAt = new Date(baseDate);
-    createdAt.setDate(baseDate.getDate() - index);
-    createdAt.setHours(9 + (index % 9), (index * 7) % 60, 0, 0);
+  for (let dayIndex = 0; dayIndex < dailyTicketCounts.length; dayIndex += 1) {
+    const ticketCount = dailyTicketCounts[dayIndex]!;
+    const daysAgo = dailyTicketCounts.length - 1 - dayIndex;
 
-    createdTickets.push(
-      prisma.ticket.create({
-        data: {
-          subject,
-          body: bodyFor(subject, senderName, isUncategorized ? null : categorySlug),
-          senderEmail,
-          senderName,
-          status: statusForIndex(index),
-          categoryId: isUncategorized ? null : categoryRecords.get(categorySlug),
-          providerThreadId: `${demoBatchPrefix}${String(index + 1).padStart(3, "0")}`,
-          createdAt,
-          updatedAt: createdAt,
-          messages: {
-            create: {
-              direction: "INBOUND",
-              fromEmail: senderEmail,
-              subject,
-              bodyText: bodyFor(subject, senderName, isUncategorized ? null : categorySlug),
-              createdAt
+    for (let dayTicketIndex = 0; dayTicketIndex < ticketCount; dayTicketIndex += 1) {
+      const index = ticketIndex;
+      const [subject, categorySlug] = scenarios[index]!;
+      const [senderName, senderEmail] = senders[index % senders.length]!;
+      const isUncategorized = index % 17 === 0;
+      const createdAt = new Date(baseDate);
+      createdAt.setUTCDate(baseDate.getUTCDate() - daysAgo);
+      createdAt.setUTCHours(8 + (dayTicketIndex % 10), (index * 11) % 60, 0, 0);
+      const updatedAt = new Date(createdAt);
+      updatedAt.setUTCMinutes(
+        createdAt.getUTCMinutes() +
+          (statusForIndex(index) === TicketStatus.open ? 0 : 45 + (index % 8) * 20)
+      );
+
+      createdTickets.push(
+        prisma.ticket.create({
+          data: {
+            subject,
+            body: bodyFor(subject, senderName, isUncategorized ? null : categorySlug),
+            senderEmail,
+            senderName,
+            status: statusForIndex(index),
+            categoryId: isUncategorized ? null : categoryRecords.get(categorySlug),
+            providerThreadId: `${demoBatchPrefix}${String(index + 1).padStart(3, "0")}`,
+            createdAt,
+            updatedAt,
+            messages: {
+              create: {
+                direction: "INBOUND",
+                fromEmail: senderEmail,
+                subject,
+                bodyText: bodyFor(subject, senderName, isUncategorized ? null : categorySlug),
+                createdAt
+              }
             }
           }
-        }
-      })
-    );
+        })
+      );
+      ticketIndex += 1;
+    }
   }
 
   await prisma.$transaction(createdTickets);

@@ -31,7 +31,7 @@ export function UsersTable({
   users
 }: UsersTableProps) {
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+    <div className="panel-surface overflow-hidden rounded-lg">
       {isLoading ? (
         <UsersTableSkeleton />
       ) : isError ? (
@@ -61,14 +61,14 @@ export function UsersTable({
             ) : (
               users.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium text-slate-950">{user.name}</TableCell>
+                  <TableCell className="font-semibold text-slate-950">{user.name}</TableCell>
                   <TableCell className="text-slate-600">{user.email}</TableCell>
                   <TableCell>
                     <Badge variant={user.role === UserRole.Admin ? "default" : "secondary"}>
                       {user.role}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-slate-600">
+                  <TableCell className="font-data text-xs text-slate-600">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="text-right">

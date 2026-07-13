@@ -6,7 +6,14 @@ type ReplyThreadProps = {
 
 export function ReplyThread({ messages = [] }: ReplyThreadProps) {
   return (
-    <div className="space-y-3">
+    <section className="panel-surface rounded-lg p-4">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-950">Conversation</h3>
+          <p className="mt-1 text-sm text-slate-500">{messages.length} messages</p>
+        </div>
+      </div>
+      <div className="space-y-3">
       {messages.map((message) => {
         const senderType = message.senderType ?? (message.direction === "OUTBOUND" ? "AGENT" : "CUSTOMER");
         const isAgentMessage = senderType === "AGENT";
@@ -17,10 +24,10 @@ export function ReplyThread({ messages = [] }: ReplyThreadProps) {
             key={message.id}
           >
             <div
-              className={`max-w-[min(680px,85%)] rounded-2xl px-4 py-3 shadow-sm ${
+              className={`max-w-[min(680px,85%)] rounded-lg px-4 py-3 shadow-sm ${
                 isAgentMessage
-                  ? "rounded-br-md bg-slate-950 text-white"
-                  : "rounded-bl-md border border-slate-200 bg-white text-slate-900"
+                  ? "bg-slate-950 text-white"
+                  : "border border-slate-200 bg-white text-slate-900"
               }`}
             >
               <div
@@ -44,7 +51,8 @@ export function ReplyThread({ messages = [] }: ReplyThreadProps) {
           </article>
         );
       })}
-    </div>
+      </div>
+    </section>
   );
 }
 

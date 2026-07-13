@@ -1,5 +1,7 @@
 import type { FormEvent } from "react";
 import { ticketStatuses } from "core";
+import { Bot, CheckCircle2, SlidersHorizontal } from "lucide-react";
+import { Button } from "../ui/button";
 import type { Category, Ticket, User } from "../../types";
 
 type UpdateTicketProps = {
@@ -17,15 +19,18 @@ export function UpdateTicket({ agents, categories, onSubmit, ticket }: UpdateTic
 
   return (
     <aside className="space-y-4">
-      <form className="rounded-lg border border-slate-200 bg-white p-4" onSubmit={onSubmit}>
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Ticket Controls
-        </h3>
+      <form className="panel-surface rounded-lg p-4" onSubmit={onSubmit}>
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-950 text-white">
+            <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
+          </span>
+          <h3 className="text-sm font-semibold text-slate-950">Ticket controls</h3>
+        </div>
 
-        <label className="mt-4 block text-sm font-medium text-slate-700">
+        <label className="mt-4 block text-sm font-semibold text-slate-700">
           Status
           <select
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            className="field-control mt-1 h-10 w-full rounded-md px-3 text-sm"
             defaultValue={ticket.status}
             name="status"
           >
@@ -37,10 +42,10 @@ export function UpdateTicket({ agents, categories, onSubmit, ticket }: UpdateTic
           </select>
         </label>
 
-        <label className="mt-4 block text-sm font-medium text-slate-700">
+        <label className="mt-4 block text-sm font-semibold text-slate-700">
           Category
           <select
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            className="field-control mt-1 h-10 w-full rounded-md px-3 text-sm"
             defaultValue={ticket.category?.slug ?? ""}
             name="categorySlug"
           >
@@ -53,10 +58,10 @@ export function UpdateTicket({ agents, categories, onSubmit, ticket }: UpdateTic
           </select>
         </label>
 
-        <label className="mt-4 block text-sm font-medium text-slate-700">
+        <label className="mt-4 block text-sm font-semibold text-slate-700">
           Assigned agent
           <select
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
+            className="field-control mt-1 h-10 w-full rounded-md px-3 text-sm"
             defaultValue={ticket.assignedTo?.id ?? ""}
             name="assignedToId"
           >
@@ -69,19 +74,28 @@ export function UpdateTicket({ agents, categories, onSubmit, ticket }: UpdateTic
           </select>
         </label>
 
-        <button className="mt-4 w-full rounded-md bg-slate-950 px-4 py-2 text-sm text-white" type="submit">
+        <Button className="mt-4 w-full" type="submit">
           Save changes
-        </button>
+        </Button>
       </form>
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-          AI Assistance
-        </h3>
-        <p className="mt-3 text-sm text-slate-600">
-          Classification, summaries, and suggested replies are scaffolded in the API and ready for
-          Codex integration.
-        </p>
+      <div className="rounded-lg border border-teal-200 bg-teal-50 p-4">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-teal-600 text-white">
+            <Bot aria-hidden="true" className="h-4 w-4" />
+          </span>
+          <h3 className="text-sm font-semibold text-teal-950">AI assistance</h3>
+        </div>
+        <div className="mt-4 space-y-3 text-sm text-teal-900">
+          <p className="flex gap-2">
+            <CheckCircle2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+            Summaries and reply polishing are available on this ticket.
+          </p>
+          <p className="flex gap-2">
+            <CheckCircle2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+            Classification keeps category routing aligned with the queue.
+          </p>
+        </div>
       </div>
     </aside>
   );
