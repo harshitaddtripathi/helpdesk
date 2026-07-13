@@ -16,6 +16,7 @@ import {
 } from "../lib/reply-polisher";
 import { formatCustomerReply, supportReplySignature } from "../lib/customer-reply-format";
 import { requireAuth } from "../middleware/require-auth";
+import { assignTicketToAiAgent } from "../lib/ai-agent";
 import { autoResolveTicketById, isAiAutoResolutionOutputFilter } from "../lib/ticket-auto-resolver";
 
 export const ticketsRouter = Router();
@@ -110,6 +111,8 @@ ticketsRouter.post(
         messages: true
       }
     });
+
+    await assignTicketToAiAgent(ticket.id);
 
     void autoResolveTicketById(ticket.id).catch((error) => {
       console.warn(`Failed to auto-resolve ticket ${ticket.id}:`, error);

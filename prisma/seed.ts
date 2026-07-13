@@ -107,6 +107,12 @@ async function main() {
       role: UserRole.admin
     },
     {
+      email: "ai-agent@example.com",
+      name: "AI-Agent",
+      password: agentPassword,
+      role: UserRole.agent
+    },
+    {
       email: "alex.agent@example.com",
       name: "Alex Morgan",
       password: agentPassword,

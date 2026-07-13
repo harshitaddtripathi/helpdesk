@@ -58,7 +58,15 @@ export type DashboardData = {
     resolved: number;
     closed: number;
     total: number;
+    aiResolved: number;
+    aiResolvedPercent: number;
+    averageResolutionTimeSeconds: number | null;
   };
+  ticketsByDay: Array<{
+    date: string;
+    label: string;
+    count: number;
+  }>;
   countsByCategory: Array<{
     categoryId: string | null;
     name: string;

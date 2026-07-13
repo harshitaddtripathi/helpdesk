@@ -11,6 +11,7 @@ import {
   generateText
 } from "ai";
 import { z } from "zod";
+import { unassignTicketFromAiAgent } from "./ai-agent";
 import { formatCustomerReply, getCustomerFirstName, supportReplySignature } from "./customer-reply-format";
 import { env } from "./env";
 import { HttpError } from "./http";
@@ -55,6 +56,7 @@ export function isAiAutoResolutionOutputFilter() {
 
 export async function autoResolveTicketById(ticketId: number): Promise<AutoResolutionResult> {
   if (!env.OPENAI_API_KEY) {
+    await unassignTicketFromAiAgent(ticketId);
     return { resolved: false, reason: "OPENAI_API_KEY is not configured." };
   }
 
@@ -64,7 +66,18 @@ export async function autoResolveTicketById(ticketId: number): Promise<AutoResol
     return { resolved: false, reason: "Ticket not found." };
   }
 
-  return autoResolveTicket(context);
+  try {
+    const result = await autoResolveTicket(context);
+
+    if (!result.resolved) {
+      await unassignTicketFromAiAgent(ticketId);
+    }
+
+    return result;
+  } catch (error) {
+    await unassignTicketFromAiAgent(ticketId);
+    throw error;
+  }
 }
 
 export async function autoResolveTicket(ticket: AutoResolutionTicket): Promise<AutoResolutionResult> {

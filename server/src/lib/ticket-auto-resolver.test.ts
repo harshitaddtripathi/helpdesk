@@ -13,7 +13,9 @@ const mocks = vi.hoisted(() => ({
     OPENAI_API_KEY: "test-openai-key"
   },
   findUniqueTicket: vi.fn(),
+  updateTicket: vi.fn(),
   updateManyTicketStatus: vi.fn(),
+  findAiAgent: vi.fn(),
   findManyArticles: vi.fn(),
   transaction: vi.fn(),
   updateManyTickets: vi.fn(),
@@ -31,7 +33,11 @@ vi.mock("./prisma", () => ({
   prisma: {
     ticket: {
       findUnique: mocks.findUniqueTicket,
+      update: mocks.updateTicket,
       updateMany: mocks.updateManyTicketStatus
+    },
+    user: {
+      findFirst: mocks.findAiAgent
     },
     knowledgeBaseArticle: {
       findMany: mocks.findManyArticles
@@ -57,6 +63,7 @@ const generateTextMock = vi.mocked(generateText);
 const openaiMock = vi.mocked(openai);
 const findUniqueTicketMock = vi.mocked(prisma.ticket.findUnique);
 const updateManyTicketStatusMock = vi.mocked(prisma.ticket.updateMany);
+const findAiAgentMock = vi.mocked(prisma.user.findFirst);
 const findManyArticlesMock = vi.mocked(prisma.knowledgeBaseArticle.findMany);
 const transactionMock = vi.mocked(prisma.$transaction);
 
@@ -114,6 +121,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   findUniqueTicketMock.mockResolvedValue(ticket);
   updateManyTicketStatusMock.mockResolvedValue({ count: 1 } as Awaited<ReturnType<typeof prisma.ticket.updateMany>>);
+  findAiAgentMock.mockResolvedValue({ id: "ai-agent-id" } as Awaited<
+    ReturnType<typeof prisma.user.findFirst>
+  >);
   findManyArticlesMock.mockResolvedValue([article]);
   mocks.updateManyTickets.mockResolvedValue({ count: 1 });
   mocks.createMessage.mockResolvedValue({});
@@ -239,6 +249,15 @@ describe("ticket auto resolver", () => {
     expect(mocks.updateManyTickets).not.toHaveBeenCalled();
     expect(mocks.createMessage).not.toHaveBeenCalled();
     expect(mocks.createAiOutput).not.toHaveBeenCalled();
+    expect(updateManyTicketStatusMock).toHaveBeenCalledWith({
+      where: {
+        id: 42,
+        assignedToId: "ai-agent-id"
+      },
+      data: {
+        assignedToId: null
+      }
+    });
   });
 
   it("does not call OpenAI when the API key is missing", async () => {

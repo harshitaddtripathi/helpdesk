@@ -3,6 +3,7 @@ import { inboundEmailSchema } from "core/schemas/tickets";
 import { MessageDirection, TicketStatus } from "@prisma/client";
 import { asyncHandler } from "../lib/http";
 import { prisma } from "../lib/prisma";
+import { assignTicketToAiAgent } from "../lib/ai-agent";
 import { autoResolveTicketById } from "../lib/ticket-auto-resolver";
 import { enqueueTicketClassification } from "../lib/ticket-classification-queue";
 import { requireWebhookSecret } from "../middleware/require-webhook-secret";
@@ -78,6 +79,8 @@ webhooksRouter.post(
         messages: true
       }
     });
+
+    await assignTicketToAiAgent(ticket.id);
 
     void enqueueTicketClassification(ticket.id).catch((error) => {
       console.warn(`Failed to enqueue ticket classification for ticket ${ticket.id}:`, error);
