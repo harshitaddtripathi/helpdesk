@@ -44,6 +44,33 @@ Default admin credentials come from `.env`:
 - Email: `SEED_ADMIN_EMAIL` (`admin@example.com` locally)
 - Password: `SEED_ADMIN_PASSWORD` (`password123` locally)
 
+## Railway deployment
+
+This repo includes `railway.json` for Railway. Railway builds with Nixpacks, runs `bun run build`, applies Prisma migrations with `bun run db:deploy` before each deploy, starts the app with `bun run start`, and checks `/health`.
+
+1. Create a Railway project and add a PostgreSQL service.
+2. Add these variables to the web service:
+
+```sh
+DATABASE_URL="${{Postgres.DATABASE_URL}}"
+CLIENT_ORIGIN="https://your-app.up.railway.app"
+BETTER_AUTH_URL="https://your-app.up.railway.app"
+BETTER_AUTH_TRUSTED_ORIGINS="https://your-app.up.railway.app"
+BETTER_AUTH_SECRET="generate-a-random-32-byte-or-longer-secret"
+WEBHOOK_SECRET="generate-a-random-32-byte-or-longer-secret"
+EMAIL_WEBHOOK_SECRET="generate-a-random-32-byte-or-longer-secret"
+OPENAI_API_KEY=""
+CODEX_API_KEY=""
+```
+
+`PORT` is provided by Railway and does not need to be set manually. If you use a custom domain, update `CLIENT_ORIGIN`, `BETTER_AUTH_URL`, and `BETTER_AUTH_TRUSTED_ORIGINS` to that domain.
+
+After the first deploy, seed the initial users once from the Railway shell or CLI:
+
+```sh
+bun run db:seed
+```
+
 ## Playwright setup
 
 Playwright is configured to use a separate PostgreSQL database on port `5433`.
