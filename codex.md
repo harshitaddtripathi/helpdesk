@@ -58,7 +58,8 @@ The client proxies `/api/*` requests to the server via `vite.config.ts`.
 - In the React client, use Axios for HTTP requests and TanStack Query for server-state fetching, caching, mutations, and invalidation. Avoid adding new raw `fetch` calls for API data unless there is a specific reason.
 - Prefer React component tests with Vitest and React Testing Library for most UI behavior. Keep tests close to the component or page under test, use user-facing queries where practical, and use `client/src/test/render-with-query.tsx` for components that depend on TanStack Query.
 - Run `bun run test:component` from the repo root before finishing component-test changes. Use `cd client && bun run test:component` for Vitest watch mode while writing tests.
-- Use Playwright E2E tests only when component tests cannot cover the behavior well, such as full authentication flows, browser-level routing, multi-page workflows, or integration with the real server/database.
+- Use Playwright E2E tests only for behavior that cannot be tested well with unit, component, or route-level integration tests. Keep E2E coverage limited to browser/session functionality such as full authentication flows, cookie-backed protected routing, and essential multi-page authorization workflows.
+- Do not add Playwright tests for ordinary CRUD, form validation, rendering, query/mutation state, or API-only behavior when that behavior is covered by unit/component tests or can be covered there. Add or update lower-level tests instead.
 - Auth rate limiting is enabled only in production. Development and test environments bypass the auth rate limiter.
 - Use the `$e2e-test-writer` project agent when writing, updating, or debugging Playwright E2E tests.
 

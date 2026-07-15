@@ -13,6 +13,7 @@
     "build:server": "bun build server/src/index.ts --target=bun --outdir dist/server --external @prisma/client",
     "start": "bun run scripts/start.ts",
     "test:component": "vitest run",
+    "test:server": "vitest run --config server/vitest.config.ts",
     "test:e2e": "playwright test --pass-with-no-tests",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",

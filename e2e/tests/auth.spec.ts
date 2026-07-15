@@ -70,61 +70,21 @@ async function expectJson(response: APIResponse, expected: unknown) {
 test.describe("authentication", () => {
   test.describe.configure({ mode: "serial" });
 
-  test("redirects unauthenticated users away from protected pages and APIs", async ({
+  test("protects app routes and keeps the browser session in sync with the API", async ({
     page,
     request
   }) => {
-    await page.goto("/");
+    await page.goto("/tickets");
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible();
 
-    await page.goto("/users");
-    await expect(page).toHaveURL(/\/login$/);
+    const anonymousMeResponse = await request.get("/api/me");
+    expect(anonymousMeResponse.status()).toBe(401);
+    await expectJson(
+      anonymousMeResponse,
+      expect.objectContaining({ message: "Authentication required." })
+    );
 
-    const meResponse = await request.get("/api/me");
-    expect(meResponse.status()).toBe(401);
-    await expectJson(meResponse, expect.objectContaining({ message: "Authentication required." }));
-  });
-
-  test("validates required login fields before submitting credentials", async ({ page }) => {
-    await page.goto("/login");
-    await page.getByRole("button", { name: "Sign in" }).click();
-
-    await expect(page.getByText("Email is required.")).toBeVisible();
-    await expect(page.getByText("Password is required.")).toBeVisible();
-    await expect(page.getByLabel("Email")).toHaveAttribute("aria-invalid", "true");
-    await expect(page.getByLabel("Password")).toHaveAttribute("aria-invalid", "true");
-    await expect(page).toHaveURL(/\/login$/);
-  });
-
-  test("validates malformed email addresses before submitting credentials", async ({ page }) => {
-    await page.goto("/login");
-    await page.getByLabel("Email").fill("not-an-email");
-    await page.getByLabel("Password").fill("anything");
-    await page.getByRole("button", { name: "Sign in" }).click();
-
-    await expect(page.getByText("Enter a valid email address.")).toBeVisible();
-    await expect(page.getByLabel("Email")).toHaveAttribute("aria-invalid", "true");
-    await expect(page.getByLabel("Password")).toHaveAttribute("aria-invalid", "false");
-    await expect(page).toHaveURL(/\/login$/);
-  });
-
-  for (const credentials of [
-    { name: "unknown email", email: "missing-user@example.com", password: "password12345" },
-    { name: "wrong password", email: ADMIN_EMAIL, password: "wrong-password-123" }
-  ]) {
-    test(`rejects ${credentials.name}`, async ({ page }) => {
-      await signIn(page, credentials.email, credentials.password);
-
-      await expect(page).toHaveURL(/\/login$/);
-      await expect(page.getByText(/invalid|incorrect|wrong|login failed/i)).toBeVisible();
-      await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();
-    });
-  }
-
-  test("signs in the seeded admin and redirects authenticated users away from login", async ({
-    page
-  }) => {
     await signInAndExpectApp(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 
     await expect(page.getByText("Admin")).toBeVisible();
@@ -150,67 +110,27 @@ test.describe("authentication", () => {
     await page.goto("/login");
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
-  });
 
-  test("signs out and clears access to protected APIs", async ({ page }) => {
-    await signInAndExpectApp(page, ADMIN_EMAIL, ADMIN_PASSWORD);
     await signOut(page);
 
-    const meResponse = await page.request.get("/api/me");
-    expect(meResponse.status()).toBe(401);
+    const signedOutMeResponse = await page.request.get("/api/me");
+    expect(signedOutMeResponse.status()).toBe(401);
 
     await page.goto("/");
     await expect(page).toHaveURL(/\/login$/);
   });
 
-  test("keeps public sign-up disabled", async ({ page, request }, testInfo) => {
-    const email = uniqueEmail(testInfo, "signup");
-    const password = "signup-password-123";
-
-    const signUpResponse = await request.post("/api/auth/sign-up/email", {
-      data: {
-        email,
-        name: "Unauthorized Signup",
-        password
-      }
-    });
-
-    expect(signUpResponse.ok()).toBe(false);
-
-    await signIn(page, email, password);
-    await expect(page).toHaveURL(/\/login$/);
-    await expect(page.getByText(/invalid|incorrect|wrong|login failed/i)).toBeVisible();
-  });
-
-  test("lets admins create agents while keeping admin routes unavailable to agents", async ({
-    page
-  }, testInfo) => {
+  test("keeps admin routes unavailable to authenticated agents", async ({ page }, testInfo) => {
     await signInAndExpectApp(page, ADMIN_EMAIL, ADMIN_PASSWORD);
 
-    const email = uniqueEmail(testInfo, "created-agent");
-    const password = "created-agent-123";
-
-    await page.getByRole("link", { name: "Users" }).click();
-    await expect(page).toHaveURL(/\/users$/);
-    await page.getByRole("button", { name: "Create agent" }).click();
-
-    const createAgentDialog = page.getByRole("dialog", { name: "Create Agent" });
-    await expect(createAgentDialog).toBeVisible();
-    await createAgentDialog.getByLabel("Name").fill("Created Agent");
-    await createAgentDialog.getByLabel("Email").fill(email);
-    await createAgentDialog.getByLabel("Password").fill(password);
-    await createAgentDialog.getByRole("button", { name: "Create agent" }).click();
-
-    const createdAgentRow = page.getByRole("row").filter({
-      has: page.getByRole("cell", { name: email })
-    });
-    await expect(createdAgentRow).toBeVisible();
-    await expect(createdAgentRow.getByRole("cell", { name: "agent", exact: true })).toBeVisible();
+    const agent = await createAgent(page, testInfo, "route-agent");
 
     await signOut(page);
-    await signInAndExpectApp(page, email, password);
+    await signInAndExpectApp(page, agent.user.email, agent.password);
 
     await expect(page.getByRole("link", { name: "Users" })).toBeHidden();
+    await page.goto("/users");
+    await expect(page).toHaveURL(/\/$/);
 
     const meResponse = await page.request.get("/api/me");
     expect(meResponse.status()).toBe(200);
@@ -218,7 +138,7 @@ test.describe("authentication", () => {
       meResponse,
       expect.objectContaining({
         user: expect.objectContaining({
-          email,
+          email: agent.user.email,
           role: "agent",
           active: true
         })
@@ -230,40 +150,6 @@ test.describe("authentication", () => {
     await expectJson(
       usersResponse,
       expect.objectContaining({ message: "You do not have permission for this action." })
-    );
-  });
-
-  test("rejects inactive authenticated users from app-protected APIs", async ({
-    page
-  }, testInfo) => {
-    await signInAndExpectApp(page, ADMIN_EMAIL, ADMIN_PASSWORD);
-
-    const agent = await createAgent(page, testInfo, "inactive-agent");
-    const deactivateResponse = await page.request.patch(`/api/users/${agent.user.id}`, {
-      data: {
-        active: false
-      }
-    });
-
-    expect(deactivateResponse.status()).toBe(200);
-    await expectJson(
-      deactivateResponse,
-      expect.objectContaining({
-        user: expect.objectContaining({
-          email: agent.user.email,
-          active: false
-        })
-      })
-    );
-
-    await signOut(page);
-    await signInAndExpectApp(page, agent.user.email, agent.password);
-
-    const meResponse = await page.request.get("/api/me");
-    expect(meResponse.status()).toBe(401);
-    await expectJson(
-      meResponse,
-      expect.objectContaining({ message: "Session is invalid or expired." })
     );
   });
 });

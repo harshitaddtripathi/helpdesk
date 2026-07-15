@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { MessageDirection, Prisma, TicketStatus, UserRole } from "@prisma/client";
+import { AiOutputType, MessageDirection, Prisma, TicketStatus, UserRole } from "@prisma/client";
 import {
   ticketListQuerySchema,
   type TicketListQuery,
@@ -15,6 +15,11 @@ import {
   polishReply
 } from "../lib/reply-polisher";
 import { formatCustomerReply, supportReplySignature } from "../lib/customer-reply-format";
+import {
+  ensureTicketSummarizerConfigured,
+  getTicketSummaryContext,
+  summarizeTicket
+} from "../lib/ticket-summarizer";
 import { requireAuth } from "../middleware/require-auth";
 import { assignTicketToAiAgent } from "../lib/ai-agent";
 import { autoResolveTicketById, isAiAutoResolutionOutputFilter } from "../lib/ticket-auto-resolver";
@@ -53,28 +58,42 @@ ticketsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
     const query = validate(ticketListQuerySchema, req.query);
-    const tickets = await prisma.ticket.findMany({
-      where: getTicketWhere(query),
-      orderBy: getTicketOrderBy(query.sortBy, query.sortOrder),
-      select: {
-        id: true,
-        subject: true,
-        senderName: true,
-        senderEmail: true,
-        status: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true
-          }
-        },
-        createdAt: true,
-        updatedAt: true
+    const where = getTicketWhere(query);
+    const [tickets, total] = await prisma.$transaction([
+      prisma.ticket.findMany({
+        where,
+        orderBy: getTicketOrderBy(query.sortBy, query.sortOrder),
+        skip: (query.page - 1) * query.pageSize,
+        take: query.pageSize,
+        select: {
+          id: true,
+          subject: true,
+          senderName: true,
+          senderEmail: true,
+          status: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true
+            }
+          },
+          createdAt: true,
+          updatedAt: true
+        }
+      }),
+      prisma.ticket.count({ where })
+    ]);
+
+    res.json({
+      tickets,
+      pagination: {
+        page: query.page,
+        pageSize: query.pageSize,
+        total,
+        pageCount: Math.ceil(total / query.pageSize)
       }
     });
-
-    res.json({ tickets });
   })
 );
 
@@ -141,7 +160,10 @@ ticketsRouter.get(
             }
           },
           messages: { orderBy: { createdAt: "asc" } },
-          aiOutputs: { orderBy: { createdAt: "desc" } }
+          aiOutputs: {
+            where: { type: AiOutputType.SUMMARY },
+            orderBy: { createdAt: "desc" }
+          }
         }
       }),
       prisma.user.findMany({
@@ -238,6 +260,35 @@ ticketsRouter.patch(
 );
 
 ticketsRouter.post(
+  "/:id/summary",
+  asyncHandler(async (req, res) => {
+    const ticketId = requireNumberParam(req.params.id, "id");
+    const ticket = await getTicketSummaryContext(ticketId);
+
+    if (!ticket) {
+      throw new HttpError(404, "Ticket not found.");
+    }
+
+    ensureTicketSummarizerConfigured();
+
+    const content = await summarizeTicket(ticket);
+    const summary = await prisma.aiOutput.create({
+      data: {
+        ticketId,
+        type: AiOutputType.SUMMARY,
+        content,
+        metadata: {
+          model: "gpt-5-nano",
+          messageCount: ticket.messages.length
+        }
+      }
+    });
+
+    res.status(201).json({ summary });
+  })
+);
+
+ticketsRouter.post(
   "/:id/replies",
   asyncHandler(async (req, res) => {
     const ticketId = requireNumberParam(req.params.id, "id");
@@ -313,7 +364,6 @@ function getTicketWhere(query: TicketListQuery) {
   } else if (query.category !== "all") {
     filters.push({ category: { slug: query.category } });
   }
-
 
   return { AND: filters } satisfies Prisma.TicketWhereInput;
 }

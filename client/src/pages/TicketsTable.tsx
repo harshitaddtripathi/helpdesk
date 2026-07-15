@@ -7,9 +7,21 @@ import {
   useReactTable,
   type ColumnFiltersState,
   type ColumnDef,
+  type PaginationState,
   type SortingState
 } from "@tanstack/react-table";
-import { AlertCircle, ArrowDown, ArrowUp, ArrowUpDown, Search, X } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Search,
+  X
+} from "lucide-react";
 import { Alert, AlertDescription } from "../components/ui/alert";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
@@ -46,6 +58,16 @@ type TicketSortOrder = "asc" | "desc";
 type TicketFilterStatus = TicketListQuery["status"];
 type TicketFilterCategory = TicketListQuery["category"];
 
+type TicketsResponse = {
+  tickets: TicketListItem[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    pageCount: number;
+  };
+};
+
 const statusOptions: Array<{ label: string; value: TicketFilterStatus }> = [
   { label: "All statuses", value: "all" },
   ...ticketStatuses.map((status) => ({ label: formatStatus(status), value: status }))
@@ -73,8 +95,8 @@ const columns: ColumnDef<TicketListItem>[] = [
     header: "Sender",
     cell: ({ row }) => (
       <div>
-        <div className="font-medium text-slate-950">{row.original.senderName}</div>
-        <div className="text-sm text-slate-500">{row.original.senderEmail}</div>
+        <div className="font-semibold text-slate-950">{row.original.senderName}</div>
+        <div className="text-xs text-slate-500">{row.original.senderEmail}</div>
       </div>
     )
   },
@@ -92,14 +114,14 @@ const columns: ColumnDef<TicketListItem>[] = [
       row.original.category ? (
         <Badge variant="secondary">{formatCategory(row.original.category.slug)}</Badge>
       ) : (
-        <span className="text-slate-500">-</span>
+        <span className="text-slate-500">Uncategorized</span>
       )
   },
   {
     accessorKey: "createdAt",
     header: "Created",
     cell: ({ row }) => (
-      <span className="text-slate-600">
+      <span className="font-data text-xs text-slate-600">
         {new Date(row.original.createdAt).toLocaleDateString()}
       </span>
     )
@@ -107,18 +129,22 @@ const columns: ColumnDef<TicketListItem>[] = [
 ];
 
 async function fetchTickets(params: TicketListQuery) {
-  const response = await axios.get<{ tickets: TicketListItem[] }>("/api/tickets", {
+  const response = await axios.get<TicketsResponse>("/api/tickets", {
     params,
     withCredentials: true
   });
 
-  return response.data.tickets;
+  return response.data;
 }
 
 export function TicketsTable() {
   const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10
+  });
   const currentSort = sorting[0];
   const sortBy = (currentSort?.id as TicketSortField | undefined) ?? "createdAt";
   const sortOrder: TicketSortOrder = currentSort ? (currentSort.desc ? "desc" : "asc") : "desc";
@@ -130,7 +156,9 @@ export function TicketsTable() {
     sortOrder,
     search,
     status,
-    category
+    category,
+    page: pagination.pageIndex + 1,
+    pageSize: pagination.pageSize
   };
 
   const ticketsQuery = useQuery({
@@ -138,31 +166,45 @@ export function TicketsTable() {
     queryFn: () => fetchTickets(ticketQueryParams)
   });
 
-  const tickets = ticketsQuery.data ?? [];
+  const tickets = ticketsQuery.data?.tickets ?? [];
+  const totalTickets = ticketsQuery.data?.pagination.total ?? 0;
   const hasActiveFilters = Boolean(search) || status !== "all" || category !== "all";
   const table = useReactTable({
     data: tickets,
     columns,
+    rowCount: totalTickets,
     state: {
       sorting,
       columnFilters,
-      globalFilter
+      globalFilter,
+      pagination
     },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
+    onSortingChange: (updater) => {
+      setSorting(updater);
+      setPagination((currentPagination) => ({ ...currentPagination, pageIndex: 0 }));
+    },
+    onColumnFiltersChange: (updater) => {
+      setColumnFilters(updater);
+      setPagination((currentPagination) => ({ ...currentPagination, pageIndex: 0 }));
+    },
+    onGlobalFilterChange: (updater) => {
+      setGlobalFilter(updater);
+      setPagination((currentPagination) => ({ ...currentPagination, pageIndex: 0 }));
+    },
+    onPaginationChange: setPagination,
     manualSorting: true,
     manualFiltering: true,
+    manualPagination: true,
     enableMultiSort: false,
     getCoreRowModel: getCoreRowModel()
   });
 
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <div className="border-b border-slate-200 p-4">
+    <div className="panel-surface overflow-hidden rounded-lg">
+      <div className="border-b border-slate-200/80 bg-white/80 p-4">
         <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_180px_210px_auto] md:items-end">
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="ticket-search">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="ticket-search">
               Search
             </label>
             <div className="relative">
@@ -171,7 +213,7 @@ export function TicketsTable() {
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
               />
               <input
-                className="h-10 w-full rounded-md border border-slate-200 bg-white pl-9 pr-3 text-sm text-slate-950 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+                className="field-control h-10 w-full rounded-md pl-9 pr-3 text-sm placeholder:text-slate-400"
                 id="ticket-search"
                 onChange={(event) => setGlobalFilter(event.target.value)}
                 placeholder="Subject, sender, or email"
@@ -181,11 +223,11 @@ export function TicketsTable() {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="ticket-status">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="ticket-status">
               Status
             </label>
             <select
-              className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-950 outline-none transition-colors focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              className="field-control h-10 w-full rounded-md px-3 text-sm"
               id="ticket-status"
               onChange={(event) =>
                 setColumnFilterValue(setColumnFilters, "status", event.target.value)
@@ -200,11 +242,11 @@ export function TicketsTable() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-sm font-medium text-slate-700" htmlFor="ticket-category">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="ticket-category">
               Category
             </label>
             <select
-              className="h-10 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-950 outline-none transition-colors focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
+              className="field-control h-10 w-full rounded-md px-3 text-sm"
               id="ticket-category"
               onChange={(event) =>
                 setColumnFilterValue(setColumnFilters, "category", event.target.value)
@@ -224,6 +266,7 @@ export function TicketsTable() {
             onClick={() => {
               setGlobalFilter("");
               setColumnFilters([]);
+              setPagination((currentPagination) => ({ ...currentPagination, pageIndex: 0 }));
             }}
             variant="ghost"
           >
@@ -289,6 +332,80 @@ export function TicketsTable() {
           </TableBody>
         </Table>
       )}
+      {!ticketsQuery.isPending && !ticketsQuery.isError ? (
+        <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-600 md:flex-row md:items-center md:justify-between">
+          <div className="font-data text-xs">
+            {totalTickets === 0 ? (
+              "0 tickets"
+            ) : (
+              <>
+                Showing {pagination.pageIndex * pagination.pageSize + 1}-
+                {Math.min((pagination.pageIndex + 1) * pagination.pageSize, totalTickets)} of{" "}
+                {totalTickets}
+              </>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="text-sm font-semibold text-slate-700" htmlFor="ticket-page-size">
+              Rows per page
+            </label>
+            <select
+              className="field-control h-9 rounded-md px-2 text-sm"
+              id="ticket-page-size"
+              onChange={(event) => {
+                table.setPageSize(Number(event.target.value));
+                table.setPageIndex(0);
+              }}
+              value={pagination.pageSize}
+            >
+              {[10, 25, 50].map((pageSize) => (
+                <option key={pageSize} value={pageSize}>
+                  {pageSize}
+                </option>
+              ))}
+            </select>
+            <span className="font-data min-w-24 text-center text-xs">
+              Page {pagination.pageIndex + 1} of {Math.max(table.getPageCount(), 1)}
+            </span>
+            <Button
+              aria-label="First page"
+              disabled={!table.getCanPreviousPage()}
+              onClick={() => table.firstPage()}
+              size="sm"
+              variant="ghost"
+            >
+              <ChevronsLeft aria-hidden="true" className="h-4 w-4" />
+            </Button>
+            <Button
+              aria-label="Previous page"
+              disabled={!table.getCanPreviousPage()}
+              onClick={() => table.previousPage()}
+              size="sm"
+              variant="ghost"
+            >
+              <ChevronLeft aria-hidden="true" className="h-4 w-4" />
+            </Button>
+            <Button
+              aria-label="Next page"
+              disabled={!table.getCanNextPage()}
+              onClick={() => table.nextPage()}
+              size="sm"
+              variant="ghost"
+            >
+              <ChevronRight aria-hidden="true" className="h-4 w-4" />
+            </Button>
+            <Button
+              aria-label="Last page"
+              disabled={!table.getCanNextPage()}
+              onClick={() => table.lastPage()}
+              size="sm"
+              variant="ghost"
+            >
+              <ChevronsRight aria-hidden="true" className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

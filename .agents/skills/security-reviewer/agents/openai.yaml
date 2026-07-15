@@ -1,0 +1,7 @@
+interface:
+  display_name: "Security Reviewer"
+  short_description: "Audit code for security vulnerabilities"
+  default_prompt: "Use $security-reviewer to review this codebase for security vulnerabilities and report confirmed issues with file references."
+
+policy:
+  allow_implicit_invocation: true

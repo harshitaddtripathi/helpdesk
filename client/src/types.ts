@@ -7,6 +7,7 @@ export enum UserRole {
 export type { TicketStatus };
 export type MessageDirection = "INBOUND" | "OUTBOUND";
 export type SenderType = "AGENT" | "CUSTOMER";
+export type AiOutputType = "CLASSIFICATION" | "SUMMARY" | "SUGGESTED_REPLY";
 
 export type User = {
   id: string;
@@ -37,6 +38,15 @@ export type TicketMessage = {
   createdAt: string;
 };
 
+export type AiOutput = {
+  id: string;
+  ticketId: number;
+  type: AiOutputType;
+  content: string;
+  metadata?: unknown;
+  createdAt: string;
+};
+
 export type Ticket = {
   id: number;
   subject: string;
@@ -48,6 +58,7 @@ export type Ticket = {
   category?: Category | null;
   assignedTo?: User | null;
   messages?: TicketMessage[];
+  aiOutputs?: AiOutput[];
   createdAt: string;
   updatedAt: string;
 };

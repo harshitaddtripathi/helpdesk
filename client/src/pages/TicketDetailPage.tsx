@@ -7,7 +7,7 @@ import { UpdateTicket } from "../components/tickets/UpdateTicket";
 import { BackLink } from "../components/ui/back-link";
 import { Button } from "../components/ui/button";
 import { apiFetch } from "../lib/api";
-import type { Category, Ticket, User } from "../types";
+import type { AiOutput, Category, Ticket, User } from "../types";
 
 type TicketDetailResponse = {
   ticket: Ticket;
@@ -21,7 +21,9 @@ export function TicketDetailPage() {
   const [agents, setAgents] = useState<User[]>([]);
   const [reply, setReply] = useState("");
   const [replyError, setReplyError] = useState("");
+  const [summaryError, setSummaryError] = useState("");
   const [isPolishingReply, setIsPolishingReply] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -114,6 +116,36 @@ export function TicketDetailPage() {
     }
   }
 
+  async function handleSummarizeTicket() {
+    if (!ticketId) return;
+
+    setError("");
+    setSummaryError("");
+    setIsSummarizing(true);
+
+    try {
+      const result = await apiFetch<{ summary: AiOutput }>(`/api/tickets/${ticketId}/summary`, {
+        method: "POST"
+      });
+
+      setTicket((current) =>
+        current
+          ? {
+              ...current,
+              aiOutputs: [
+                result.summary,
+                ...(current.aiOutputs?.filter((output) => output.id !== result.summary.id) ?? [])
+              ]
+            }
+          : current
+      );
+    } catch (requestError) {
+      setSummaryError(requestError instanceof Error ? requestError.message : "Failed to summarize ticket.");
+    } finally {
+      setIsSummarizing(false);
+    }
+  }
+
   if (error) {
     return <p className="text-sm text-red-600">{error}</p>;
   }
@@ -122,9 +154,20 @@ export function TicketDetailPage() {
     return <p className="text-sm text-slate-500">Loading ticket...</p>;
   }
 
+  const latestSummary = ticket.aiOutputs?.find((output) => output.type === "SUMMARY");
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <BackLink to="/tickets">Back to tickets</BackLink>
+
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+          Ticket detail
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+          Resolve customer request
+        </h1>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <section className="space-y-4">
@@ -132,11 +175,39 @@ export function TicketDetailPage() {
 
           <ReplyThread messages={ticket.messages} />
 
-          <form className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm" onSubmit={handleReplySubmit}>
-            <label className="block text-sm font-medium text-slate-700">
+          <div className="space-y-3">
+            <div>
+              <Button
+                disabled={isSummarizing}
+                onClick={handleSummarizeTicket}
+                type="button"
+                variant="ghost"
+              >
+                <Sparkles aria-hidden="true" className="h-4 w-4" />
+                {isSummarizing ? "Summarizing..." : latestSummary ? "Regenerate summary" : "Summarize"}
+              </Button>
+            </div>
+            {summaryError ? <p className="text-sm text-red-600">{summaryError}</p> : null}
+            {latestSummary ? (
+              <section className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-blue-950">Summary</h3>
+                  <span className="font-data text-xs text-blue-700">
+                    Generated {new Date(latestSummary.createdAt).toLocaleString()}
+                  </span>
+                </div>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-blue-950">
+                  {latestSummary.content}
+                </p>
+              </section>
+            ) : null}
+          </div>
+
+          <form className="panel-surface rounded-lg p-4" onSubmit={handleReplySubmit}>
+            <label className="block text-sm font-semibold text-slate-700">
               Reply
               <textarea
-                className="mt-2 min-h-28 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-950 focus:bg-white focus:ring-2 focus:ring-slate-200"
+                className="field-control mt-2 min-h-32 w-full rounded-md px-3 py-2 text-sm"
                 value={reply}
                 onChange={(event) => {
                   setReply(event.target.value);

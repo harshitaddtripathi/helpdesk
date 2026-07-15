@@ -76,13 +76,17 @@ function mockTicketDetailRequests({
   ticketDetail = ticket,
   replyError,
   polishError,
-  polishedReply = "We can help with that and will review your refund request."
+  polishedReply = "We can help with that and will review your refund request.",
+  summaryError,
+  generatedSummary = "- Customer wants a refund.\n- Next step: review the order."
 }: {
   savedTicket?: Ticket;
   ticketDetail?: Ticket;
   replyError?: Error;
   polishError?: Error;
   polishedReply?: string;
+  summaryError?: Error;
+  generatedSummary?: string;
 } = {}) {
   apiFetchMock.mockImplementation(async (path, options) => {
     if (path === "/api/tickets/1" && options?.method === "PATCH") {
@@ -115,6 +119,23 @@ function mockTicketDetailRequests({
       }
 
       return { reply: polishedReply };
+    }
+
+    if (path === "/api/tickets/1/summary" && options?.method === "POST") {
+      if (summaryError) {
+        throw summaryError;
+      }
+
+      return {
+        summary: {
+          id: "summary-1",
+          ticketId: 1,
+          type: "SUMMARY",
+          content: generatedSummary,
+          metadata: { model: "gpt-5-nano" },
+          createdAt: "2026-07-01T12:10:00.000Z"
+        }
+      };
     }
 
     if (path === "/api/tickets/1") {
@@ -318,5 +339,59 @@ describe("TicketDetailPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Polish" }));
 
     expect(await screen.findByText("Failed to polish test reply.")).toBeInTheDocument();
+  });
+
+  it("generates and displays a ticket summary", async () => {
+    mockTicketDetailRequests();
+
+    renderTicketDetailPage();
+
+    await screen.findByRole("heading", { name: "Refund request" });
+    await userEvent.click(screen.getByRole("button", { name: "Summarize" }));
+
+    await waitFor(() => {
+      expect(apiFetchMock).toHaveBeenCalledWith("/api/tickets/1/summary", {
+        method: "POST"
+      });
+    });
+    expect(await screen.findByRole("heading", { name: "Summary" })).toBeInTheDocument();
+    expect(screen.getByText(/Customer wants a refund/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Regenerate summary" })).toBeInTheDocument();
+  });
+
+  it("shows the latest loaded summary and regenerates it", async () => {
+    mockTicketDetailRequests({
+      ticketDetail: {
+        ...ticket,
+        aiOutputs: [
+          {
+            id: "summary-old",
+            ticketId: 1,
+            type: "SUMMARY",
+            content: "Older summary",
+            createdAt: "2026-07-01T12:02:00.000Z"
+          }
+        ]
+      },
+      generatedSummary: "Fresh summary"
+    });
+
+    renderTicketDetailPage();
+
+    expect(await screen.findByText("Older summary")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Regenerate summary" }));
+
+    expect(await screen.findByText("Fresh summary")).toBeInTheDocument();
+  });
+
+  it("shows an error when summary generation fails", async () => {
+    mockTicketDetailRequests({ summaryError: new Error("Failed to summarize test ticket.") });
+
+    renderTicketDetailPage();
+
+    await screen.findByRole("heading", { name: "Refund request" });
+    await userEvent.click(screen.getByRole("button", { name: "Summarize" }));
+
+    expect(await screen.findByText("Failed to summarize test ticket.")).toBeInTheDocument();
   });
 });

@@ -24,7 +24,9 @@ const defaultTicketParams = {
   sortOrder: "desc",
   search: "",
   status: "all",
-  category: "all"
+  category: "all",
+  page: 1,
+  pageSize: 10
 };
 
 const tickets: Array<
@@ -48,6 +50,16 @@ const tickets: Array<
   }
 ];
 
+const ticketPage = {
+  tickets,
+  pagination: {
+    page: 1,
+    pageSize: 10,
+    total: 25,
+    pageCount: 3
+  }
+};
+
 afterEach(() => {
   vi.clearAllMocks();
 });
@@ -62,7 +74,7 @@ function renderTicketsPage() {
 
 describe("TicketsPage", () => {
   it("requests tickets with the default server sort", async () => {
-    axiosMock.get.mockResolvedValue({ data: { tickets } });
+    axiosMock.get.mockResolvedValue({ data: ticketPage });
 
     renderTicketsPage();
 
@@ -74,7 +86,7 @@ describe("TicketsPage", () => {
   });
 
   it("links each ticket subject to the ticket detail page", async () => {
-    axiosMock.get.mockResolvedValue({ data: { tickets } });
+    axiosMock.get.mockResolvedValue({ data: ticketPage });
 
     renderTicketsPage();
 
@@ -85,7 +97,7 @@ describe("TicketsPage", () => {
   });
 
   it("refetches tickets sorted by a clicked column ascending", async () => {
-    axiosMock.get.mockResolvedValue({ data: { tickets } });
+    axiosMock.get.mockResolvedValue({ data: ticketPage });
 
     renderTicketsPage();
 
@@ -103,7 +115,7 @@ describe("TicketsPage", () => {
   });
 
   it("toggles a clicked column from ascending to descending", async () => {
-    axiosMock.get.mockResolvedValue({ data: { tickets } });
+    axiosMock.get.mockResolvedValue({ data: ticketPage });
 
     renderTicketsPage();
 
@@ -129,7 +141,7 @@ describe("TicketsPage", () => {
   });
 
   it("clears sorting on a third click and refetches the default sort", async () => {
-    axiosMock.get.mockResolvedValue({ data: { tickets } });
+    axiosMock.get.mockResolvedValue({ data: ticketPage });
 
     renderTicketsPage();
 
@@ -163,7 +175,7 @@ describe("TicketsPage", () => {
   });
 
   it("filters tickets by status on the server", async () => {
-    axiosMock.get.mockResolvedValue({ data: { tickets } });
+    axiosMock.get.mockResolvedValue({ data: ticketPage });
 
     renderTicketsPage();
 
@@ -180,7 +192,7 @@ describe("TicketsPage", () => {
   });
 
   it("filters tickets by category on the server", async () => {
-    axiosMock.get.mockResolvedValue({ data: { tickets } });
+    axiosMock.get.mockResolvedValue({ data: ticketPage });
 
     renderTicketsPage();
 
@@ -197,7 +209,7 @@ describe("TicketsPage", () => {
   });
 
   it("filters tickets by search text on the server", async () => {
-    axiosMock.get.mockResolvedValue({ data: { tickets } });
+    axiosMock.get.mockResolvedValue({ data: ticketPage });
 
     renderTicketsPage();
 
@@ -214,7 +226,7 @@ describe("TicketsPage", () => {
   });
 
   it("clears active filters and refetches the default filter set", async () => {
-    axiosMock.get.mockResolvedValue({ data: { tickets } });
+    axiosMock.get.mockResolvedValue({ data: ticketPage });
 
     renderTicketsPage();
 
@@ -237,5 +249,39 @@ describe("TicketsPage", () => {
       });
     });
     expect(screen.getByLabelText("Status")).toHaveValue("all");
+  });
+
+  it("refetches tickets when moving to the next page", async () => {
+    axiosMock.get.mockResolvedValue({ data: ticketPage });
+
+    renderTicketsPage();
+
+    expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Next page" }));
+
+    await waitFor(() => {
+      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
+        params: { ...defaultTicketParams, page: 2 },
+        withCredentials: true
+      });
+    });
+  });
+
+  it("refetches tickets when changing rows per page", async () => {
+    axiosMock.get.mockResolvedValue({ data: ticketPage });
+
+    renderTicketsPage();
+
+    expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
+
+    await userEvent.selectOptions(screen.getByLabelText("Rows per page"), "25");
+
+    await waitFor(() => {
+      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
+        params: { ...defaultTicketParams, pageSize: 25 },
+        withCredentials: true
+      });
+    });
   });
 });
