@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "postinstall": "bun run db:generate",
+    "postinstall": "bun run scripts/postinstall.ts",
     "dev": "bun run scripts/dev.ts",
     "dev:api": "bun --watch server/src/index.ts",
     "dev:web": "vite --host 0.0.0.0",
