@@ -126,6 +126,7 @@ export const env = {
   NODE_ENV: nodeEnv,
   PORT: port,
   DATABASE_URL: requireEnv("DATABASE_URL"),
+  DIRECT_URL: readEnv("DIRECT_URL"),
   CLIENT_ORIGIN: clientOrigin,
   BETTER_AUTH_TRUSTED_ORIGINS: addDevelopmentOrigins(
     parseOriginList(readEnv("BETTER_AUTH_TRUSTED_ORIGINS"), clientOrigin)

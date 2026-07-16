@@ -4,7 +4,7 @@ import { PrismaClient, UserRole } from "@prisma/client";
 import { generateId } from "@better-auth/core/utils/id";
 import { hashPassword } from "better-auth/crypto";
 
-const adapter = new PrismaPg({ connectionString: requireEnv("DATABASE_URL") });
+const adapter = new PrismaPg({ connectionString: readEnv("DIRECT_URL") ?? requireEnv("DATABASE_URL") });
 const prisma = new PrismaClient({ adapter });
 
 type SeedUser = {
@@ -15,13 +15,17 @@ type SeedUser = {
 };
 
 function requireEnv(name: string) {
-  const value = process.env[name]?.trim();
+  const value = readEnv(name);
 
   if (!value) {
     throw new Error(`Missing required environment variable: ${name}`);
   }
 
   return value;
+}
+
+function readEnv(name: string) {
+  return process.env[name]?.trim();
 }
 
 async function ensureSeedUser({ email, name, password, role }: SeedUser) {
