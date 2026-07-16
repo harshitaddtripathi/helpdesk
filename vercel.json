@@ -11,6 +11,9 @@
       "env": ["API_BASE_URL"]
     },
     {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
