@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { BookOpen, Gauge, Inbox, LogOut, Sparkles, Users } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router";
 import { signOut, useSession } from "../lib/auth-client";
+import { getSessionUser } from "../lib/session-user";
 import { UserRole } from "../types";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -10,7 +11,8 @@ export function Layout() {
   const navigate = useNavigate();
   const { data: session, refetch } = useSession();
   const [signingOut, setSigningOut] = useState(false);
-  const userRole = (session?.user as { role?: string } | undefined)?.role;
+  const user = getSessionUser(session);
+  const userRole = user?.role;
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -63,7 +65,7 @@ export function Layout() {
 
         <div className="border-t border-white/10 p-4">
           <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-            <p className="truncate text-sm font-medium text-white">{session?.user.name}</p>
+            <p className="truncate text-sm font-medium text-white">{user?.name ?? "Agent"}</p>
             <p className="mt-1 text-xs text-slate-400">{userRole ?? "Agent"}</p>
           </div>
           <button

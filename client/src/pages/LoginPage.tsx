@@ -6,6 +6,7 @@ import { Navigate, useNavigate } from "react-router";
 import { z } from "zod";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { signIn, useSession } from "../lib/auth-client";
+import { getSessionUser } from "../lib/session-user";
 
 const loginSchema = z.object({
   email: z.string().trim().min(1, "Email is required.").email("Enter a valid email address."),
@@ -17,6 +18,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginPage() {
   const navigate = useNavigate();
   const { data: session, isPending, refetch } = useSession();
+  const user = getSessionUser(session);
   const [error, setError] = useState("");
   const {
     register,
@@ -38,7 +40,7 @@ export function LoginPage() {
     );
   }
 
-  if (session) {
+  if (user) {
     return <Navigate to="/" replace />;
   }
 
