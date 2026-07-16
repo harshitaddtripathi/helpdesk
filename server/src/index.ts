@@ -28,7 +28,7 @@ if (env.NODE_ENV === "production") {
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || env.BETTER_AUTH_TRUSTED_ORIGINS.includes(origin)) {
+      if (!origin || isTrustedOrigin(origin)) {
         callback(null, true);
         return;
       }
@@ -38,6 +38,29 @@ app.use(
     credentials: true
   })
 );
+
+function isTrustedOrigin(origin: string) {
+  return env.BETTER_AUTH_TRUSTED_ORIGINS.some((trustedOrigin) =>
+    matchesTrustedOrigin(origin, trustedOrigin)
+  );
+}
+
+function matchesTrustedOrigin(origin: string, trustedOrigin: string) {
+  if (origin === trustedOrigin) {
+    return true;
+  }
+
+  if (!trustedOrigin.includes("*") && !trustedOrigin.includes("?")) {
+    return false;
+  }
+
+  const escapedPattern = trustedOrigin
+    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+    .replace(/\*/g, ".*")
+    .replace(/\?/g, ".");
+
+  return new RegExp(`^${escapedPattern}$`).test(origin);
+}
 if (env.NODE_ENV === "production") {
   app.all("/api/auth/{*any}", authRateLimiter, toNodeHandler(auth));
 } else {

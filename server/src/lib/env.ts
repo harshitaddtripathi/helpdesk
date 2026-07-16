@@ -44,6 +44,30 @@ function normalizeOrigin(value: string, name: string) {
   }
 }
 
+function normalizeTrustedOrigin(value: string, name: string) {
+  if (!value.includes("*") && !value.includes("?")) {
+    return normalizeOrigin(value, name);
+  }
+
+  const urlSafeValue = value.replace(/[*?]+/g, "wildcard");
+
+  try {
+    const parsedUrl = new URL(urlSafeValue);
+
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      throw new Error();
+    }
+
+    if (parsedUrl.pathname !== "/" || parsedUrl.search || parsedUrl.hash) {
+      throw new Error();
+    }
+
+    return value.replace(/\/$/, "");
+  } catch {
+    throw new Error(`${name} must be a valid URL origin or wildcard origin.`);
+  }
+}
+
 function requireUrl(name: string, fallback?: string) {
   const value = readEnv(name) ?? fallback;
 
@@ -66,7 +90,7 @@ function parseOriginList(value: string | undefined, fallbackOrigin: string) {
     .filter(Boolean);
 
   return (origins?.length ? origins : [fallbackOrigin]).map((origin, index) =>
-    normalizeOrigin(origin, `BETTER_AUTH_TRUSTED_ORIGINS[${index}]`)
+    normalizeTrustedOrigin(origin, `BETTER_AUTH_TRUSTED_ORIGINS[${index}]`)
   );
 }
 
