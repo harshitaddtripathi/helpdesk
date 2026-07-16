@@ -83,6 +83,16 @@ function requireUrl(name: string, fallback?: string) {
   }
 }
 
+function readBoolean(name: string, fallback = false) {
+  const value = readEnv(name);
+
+  if (!value) {
+    return fallback;
+  }
+
+  return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+}
+
 function parseOriginList(value: string | undefined, fallbackOrigin: string) {
   const origins = value
     ?.split(",")
@@ -159,6 +169,7 @@ export const env = {
   BETTER_AUTH_SECRET: requireSecret("BETTER_AUTH_SECRET"),
   CODEX_API_KEY: readEnv("CODEX_API_KEY") ?? "",
   OPENAI_API_KEY: readEnv("OPENAI_API_KEY") ?? "",
+  ENABLE_EMAIL_SIMULATOR: readBoolean("ENABLE_EMAIL_SIMULATOR"),
   WEBHOOK_SECRET: webhookSecret,
   EMAIL_WEBHOOK_SECRET: emailWebhookSecret
 };

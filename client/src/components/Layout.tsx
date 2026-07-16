@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
-import { BookOpen, Gauge, Inbox, LogOut, Sparkles, Users } from "lucide-react";
+import { BookOpen, Gauge, Inbox, LogOut, MailPlus, Sparkles, Users } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router";
 import { signOut, useSession } from "../lib/auth-client";
+import { emailSimulatorEnabled } from "../lib/feature-flags";
 import { getSessionUser } from "../lib/session-user";
 import { UserRole } from "../types";
 import { ThemeToggle } from "./ThemeToggle";
@@ -35,7 +36,14 @@ export function Layout() {
     { to: "/", label: "Dashboard", icon: Gauge },
     { to: "/tickets", label: "Tickets", icon: Inbox },
     { to: "/knowledge-base", label: "Knowledge", icon: BookOpen },
-    ...(userRole === UserRole.Admin ? [{ to: "/users", label: "Users", icon: Users }] : [])
+    ...(userRole === UserRole.Admin
+      ? [
+          ...(emailSimulatorEnabled
+            ? [{ to: "/email-simulator", label: "Simulator", icon: MailPlus }]
+            : []),
+          { to: "/users", label: "Users", icon: Users }
+        ]
+      : [])
   ];
 
   return (

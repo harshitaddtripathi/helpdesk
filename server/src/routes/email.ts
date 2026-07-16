@@ -1,12 +1,15 @@
 import { timingSafeEqual } from "node:crypto";
 import { Router } from "express";
 import { MessageDirection } from "@prisma/client";
+import { inboundEmailSchema as simulatorEmailSchema } from "core/schemas/tickets";
 import { z } from "zod";
 import { env } from "../lib/env";
 import { asyncHandler, HttpError } from "../lib/http";
+import { receiveInboundEmail } from "../lib/inbound-email";
 import { prisma } from "../lib/prisma";
 import { assignTicketToAiAgent } from "../lib/ai-agent";
 import { autoResolveTicketById } from "../lib/ticket-auto-resolver";
+import { requireAdmin } from "../middleware/require-auth";
 
 export const emailRouter = Router();
 
@@ -19,6 +22,27 @@ const inboundEmailSchema = z.object({
   messageId: z.string().optional(),
   threadId: z.string().optional()
 });
+
+emailRouter.post(
+  "/simulate",
+  requireAdmin,
+  asyncHandler(async (req, res) => {
+    if (!env.ENABLE_EMAIL_SIMULATOR) {
+      throw new HttpError(403, "Email simulator is disabled.");
+    }
+
+    const body = simulatorEmailSchema.parse(req.body);
+    const result = await receiveInboundEmail(body);
+    const statusCode = result.status === "created" ? 201 : 200;
+
+    res.status(statusCode).json({
+      simulated: true,
+      status: result.status,
+      ticket: result.ticket,
+      ...(result.status === "appended" ? { message: result.message } : {})
+    });
+  })
+);
 
 emailRouter.post(
   "/inbound",
