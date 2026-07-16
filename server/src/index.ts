@@ -62,9 +62,9 @@ function matchesTrustedOrigin(origin: string, trustedOrigin: string) {
   return new RegExp(`^${escapedPattern}$`).test(origin);
 }
 if (env.NODE_ENV === "production") {
-  app.all("/api/auth/{*any}", authRateLimiter, toNodeHandler(auth));
+  app.all("/api/auth/*splat", authRateLimiter, toNodeHandler(auth));
 } else {
-  app.all("/api/auth/{*any}", toNodeHandler(auth));
+  app.all("/api/auth/*splat", toNodeHandler(auth));
 }
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser());
