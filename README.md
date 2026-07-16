@@ -44,6 +44,16 @@ Default admin credentials come from `.env`:
 - Email: `SEED_ADMIN_EMAIL` (`admin@example.com` locally)
 - Password: `SEED_ADMIN_PASSWORD` (`password123` locally)
 
+## Vercel frontend deployment
+
+The frontend can be deployed to Vercel from this repo. Set this Vercel environment variable so `/api/*` requests are proxied to the backend service:
+
+```sh
+API_BASE_URL="https://your-render-service.onrender.com"
+```
+
+Do not include a trailing slash. Also set the backend service `CLIENT_ORIGIN` and `BETTER_AUTH_TRUSTED_ORIGINS` to the Vercel frontend URL.
+
 ## Railway deployment
 
 This repo includes `railway.json` for Railway. Railway builds with Nixpacks, runs `bun run build`, applies Prisma migrations with `bun run db:deploy` before each deploy, starts the app with `bun run start`, and checks `/health`.

@@ -4,7 +4,8 @@ import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vitest/config";
 
 const vitePort = Number(process.env.VITE_PORT ?? 5173);
-const apiProxyTarget = process.env.VITE_API_URL || "http://localhost:3000";
+const apiProxyTarget =
+  process.env.VITE_API_BASE_URL || process.env.API_BASE_URL || process.env.VITE_API_URL || "http://localhost:3000";
 
 export default defineConfig({
   root: "client",

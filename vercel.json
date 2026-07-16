@@ -4,10 +4,18 @@
   "installCommand": "bun install --frozen-lockfile --ignore-scripts",
   "buildCommand": "bun run build:client",
   "outputDirectory": "dist/client",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/api/(.*)",
+      "dest": "${API_BASE_URL}/api/$1",
+      "env": ["API_BASE_URL"]
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
