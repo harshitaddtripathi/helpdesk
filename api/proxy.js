@@ -12,24 +12,34 @@ export default async function handler(req, res) {
     return;
   }
 
-  const path = Array.isArray(req.query.path) ? req.query.path.join("/") : req.query.path;
   const requestUrl = new URL(req.url ?? "/", "http://localhost");
-  const targetUrl = new URL(`/api/${path ?? ""}${requestUrl.search}`, apiBaseUrl);
-  const headers = getForwardHeaders(req.headers);
-  const body = hasRequestBody(req.method) ? await readRequestBody(req) : undefined;
+  const path = getPath(req.query.path);
+  const targetUrl = new URL(`/api/${path}`, apiBaseUrl);
+
+  requestUrl.searchParams.forEach((value, key) => {
+    if (key !== "path") {
+      targetUrl.searchParams.append(key, value);
+    }
+  });
 
   const upstreamResponse = await fetch(targetUrl, {
     method: req.method,
-    headers,
-    body,
+    headers: getForwardHeaders(req.headers),
+    body: hasRequestBody(req.method) ? await readRequestBody(req) : undefined,
     redirect: "manual"
   });
 
   res.status(upstreamResponse.status);
   setResponseHeaders(res, upstreamResponse.headers);
+  res.send(Buffer.from(await upstreamResponse.arrayBuffer()));
+}
 
-  const responseBody = Buffer.from(await upstreamResponse.arrayBuffer());
-  res.send(responseBody);
+function getPath(path) {
+  if (Array.isArray(path)) {
+    return path.join("/");
+  }
+
+  return String(path ?? "").replace(/^\/+/, "");
 }
 
 function getForwardHeaders(requestHeaders) {
