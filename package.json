@@ -23,7 +23,8 @@
     "db:generate": "prisma generate",
     "db:deploy": "prisma migrate deploy",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:demo-tickets": "bun run scripts/create-demo-tickets.ts"
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.11",

@@ -1,24 +1,19 @@
 import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import axios from "axios";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router";
+import { apiFetch } from "../lib/api";
 import { renderWithQuery } from "../test/render-with-query";
 import type { Ticket } from "../types";
 import { TicketsPage } from "./TicketsPage";
 
-vi.mock("axios", () => {
-  const axiosMock = {
-    get: vi.fn(),
-    isAxiosError: vi.fn((error: unknown) => {
-      return Boolean(error && typeof error === "object" && "isAxiosError" in error);
-    })
+vi.mock("../lib/api", () => {
+  return {
+    apiFetch: vi.fn()
   };
-
-  return { default: axiosMock };
 });
 
-const axiosMock = vi.mocked(axios);
+const apiFetchMock = vi.mocked(apiFetch);
 const defaultTicketParams = {
   sortBy: "createdAt",
   sortOrder: "desc",
@@ -59,6 +54,19 @@ const ticketPage = {
     pageCount: 3
   }
 };
+const defaultTicketsPath =
+  "/api/tickets?sortBy=createdAt&sortOrder=desc&search=&status=all&category=all&page=1&pageSize=10";
+
+function ticketsPath(params: Partial<typeof defaultTicketParams> = {}) {
+  const searchParams = new URLSearchParams();
+  const mergedParams = { ...defaultTicketParams, ...params };
+
+  for (const [key, value] of Object.entries(mergedParams)) {
+    searchParams.set(key, String(value));
+  }
+
+  return `/api/tickets?${searchParams.toString()}`;
+}
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -74,19 +82,16 @@ function renderTicketsPage() {
 
 describe("TicketsPage", () => {
   it("requests tickets with the default server sort", async () => {
-    axiosMock.get.mockResolvedValue({ data: ticketPage });
+    apiFetchMock.mockResolvedValue(ticketPage);
 
     renderTicketsPage();
 
     expect(await screen.findByText("customer@example.com")).toBeInTheDocument();
-    expect(axiosMock.get).toHaveBeenCalledWith("/api/tickets", {
-      params: defaultTicketParams,
-      withCredentials: true
-    });
+    expect(apiFetchMock).toHaveBeenCalledWith(defaultTicketsPath);
   });
 
   it("links each ticket subject to the ticket detail page", async () => {
-    axiosMock.get.mockResolvedValue({ data: ticketPage });
+    apiFetchMock.mockResolvedValue(ticketPage);
 
     renderTicketsPage();
 
@@ -97,7 +102,7 @@ describe("TicketsPage", () => {
   });
 
   it("refetches tickets sorted by a clicked column ascending", async () => {
-    axiosMock.get.mockResolvedValue({ data: ticketPage });
+    apiFetchMock.mockResolvedValue(ticketPage);
 
     renderTicketsPage();
 
@@ -106,16 +111,15 @@ describe("TicketsPage", () => {
     await userEvent.click(screen.getByRole("button", { name: /Subject/ }));
 
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { ...defaultTicketParams, sortBy: "subject", sortOrder: "asc" },
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(
+        ticketsPath({ sortBy: "subject", sortOrder: "asc" })
+      );
     });
     expect(screen.getByRole("button", { name: /Subject sorted ascending/ })).toBeInTheDocument();
   });
 
   it("toggles a clicked column from ascending to descending", async () => {
-    axiosMock.get.mockResolvedValue({ data: ticketPage });
+    apiFetchMock.mockResolvedValue(ticketPage);
 
     renderTicketsPage();
 
@@ -123,25 +127,23 @@ describe("TicketsPage", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /Subject/ }));
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { ...defaultTicketParams, sortBy: "subject", sortOrder: "asc" },
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(
+        ticketsPath({ sortBy: "subject", sortOrder: "asc" })
+      );
     });
 
     await userEvent.click(screen.getByRole("button", { name: /Subject/ }));
 
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { ...defaultTicketParams, sortBy: "subject", sortOrder: "desc" },
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(
+        ticketsPath({ sortBy: "subject", sortOrder: "desc" })
+      );
     });
     expect(screen.getByRole("button", { name: /Subject sorted descending/ })).toBeInTheDocument();
   });
 
   it("clears sorting on a third click and refetches the default sort", async () => {
-    axiosMock.get.mockResolvedValue({ data: ticketPage });
+    apiFetchMock.mockResolvedValue(ticketPage);
 
     renderTicketsPage();
 
@@ -149,33 +151,28 @@ describe("TicketsPage", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /Subject/ }));
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { ...defaultTicketParams, sortBy: "subject", sortOrder: "asc" },
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(
+        ticketsPath({ sortBy: "subject", sortOrder: "asc" })
+      );
     });
 
     await userEvent.click(screen.getByRole("button", { name: /Subject/ }));
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { ...defaultTicketParams, sortBy: "subject", sortOrder: "desc" },
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(
+        ticketsPath({ sortBy: "subject", sortOrder: "desc" })
+      );
     });
 
     await userEvent.click(screen.getByRole("button", { name: /Subject/ }));
 
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: defaultTicketParams,
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(defaultTicketsPath);
     });
     expect(screen.getByRole("button", { name: /Subject not sorted/ })).toBeInTheDocument();
   });
 
   it("filters tickets by status on the server", async () => {
-    axiosMock.get.mockResolvedValue({ data: ticketPage });
+    apiFetchMock.mockResolvedValue(ticketPage);
 
     renderTicketsPage();
 
@@ -184,15 +181,12 @@ describe("TicketsPage", () => {
     await userEvent.selectOptions(screen.getByLabelText("Status"), "open");
 
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { ...defaultTicketParams, status: "open" },
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(ticketsPath({ status: "open" }));
     });
   });
 
   it("filters tickets by category on the server", async () => {
-    axiosMock.get.mockResolvedValue({ data: ticketPage });
+    apiFetchMock.mockResolvedValue(ticketPage);
 
     renderTicketsPage();
 
@@ -201,15 +195,14 @@ describe("TicketsPage", () => {
     await userEvent.selectOptions(screen.getByLabelText("Category"), "refund_request");
 
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { ...defaultTicketParams, category: "refund_request" },
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(
+        ticketsPath({ category: "refund_request" })
+      );
     });
   });
 
   it("filters tickets by search text on the server", async () => {
-    axiosMock.get.mockResolvedValue({ data: ticketPage });
+    apiFetchMock.mockResolvedValue(ticketPage);
 
     renderTicketsPage();
 
@@ -218,15 +211,12 @@ describe("TicketsPage", () => {
     await userEvent.type(screen.getByLabelText("Search"), "refund");
 
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { ...defaultTicketParams, search: "refund" },
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(ticketsPath({ search: "refund" }));
     });
   });
 
   it("clears active filters and refetches the default filter set", async () => {
-    axiosMock.get.mockResolvedValue({ data: ticketPage });
+    apiFetchMock.mockResolvedValue(ticketPage);
 
     renderTicketsPage();
 
@@ -234,25 +224,19 @@ describe("TicketsPage", () => {
 
     await userEvent.selectOptions(screen.getByLabelText("Status"), "closed");
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { ...defaultTicketParams, status: "closed" },
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(ticketsPath({ status: "closed" }));
     });
 
     await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
 
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: defaultTicketParams,
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(defaultTicketsPath);
     });
     expect(screen.getByLabelText("Status")).toHaveValue("all");
   });
 
   it("refetches tickets when moving to the next page", async () => {
-    axiosMock.get.mockResolvedValue({ data: ticketPage });
+    apiFetchMock.mockResolvedValue(ticketPage);
 
     renderTicketsPage();
 
@@ -261,15 +245,12 @@ describe("TicketsPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Next page" }));
 
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { ...defaultTicketParams, page: 2 },
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(ticketsPath({ page: 2 }));
     });
   });
 
   it("refetches tickets when changing rows per page", async () => {
-    axiosMock.get.mockResolvedValue({ data: ticketPage });
+    apiFetchMock.mockResolvedValue(ticketPage);
 
     renderTicketsPage();
 
@@ -278,10 +259,7 @@ describe("TicketsPage", () => {
     await userEvent.selectOptions(screen.getByLabelText("Rows per page"), "25");
 
     await waitFor(() => {
-      expect(axiosMock.get).toHaveBeenLastCalledWith("/api/tickets", {
-        params: { ...defaultTicketParams, pageSize: 25 },
-        withCredentials: true
-      });
+      expect(apiFetchMock).toHaveBeenLastCalledWith(ticketsPath({ pageSize: 25 }));
     });
   });
 });

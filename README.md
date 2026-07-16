@@ -87,6 +87,12 @@ After the first deploy, seed the initial users once from the Railway shell or CL
 bun run db:seed
 ```
 
+To populate the ticket queue with demo tickets, run this once against the deployed database:
+
+```sh
+bun run db:demo-tickets
+```
+
 ## Render backend deployment
 
 This repo includes `render.yaml` for deploying only the backend API on Render. No folder restructuring is required; Render can build from the repository root.
@@ -122,6 +128,12 @@ After the first successful Render deploy, seed initial users once from the Rende
 
 ```sh
 bun run db:seed
+```
+
+To populate the ticket queue with demo tickets, run this once from the Render shell:
+
+```sh
+bun run db:demo-tickets
 ```
 
 ## Playwright setup

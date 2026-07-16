@@ -1,5 +1,4 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
-import axios from "axios";
 import { useQuery } from "@tanstack/react-query";
 import {
   flexRender,
@@ -43,6 +42,7 @@ import {
   type TicketListQuery,
   type TicketSortField
 } from "core";
+import { apiFetch } from "../lib/api";
 
 type TicketListItem = {
   id: number;
@@ -129,12 +129,13 @@ const columns: ColumnDef<TicketListItem>[] = [
 ];
 
 async function fetchTickets(params: TicketListQuery) {
-  const response = await axios.get<TicketsResponse>("/api/tickets", {
-    params,
-    withCredentials: true
-  });
+  const searchParams = new URLSearchParams();
 
-  return response.data;
+  for (const [key, value] of Object.entries(params)) {
+    searchParams.set(key, String(value));
+  }
+
+  return apiFetch<TicketsResponse>(`/api/tickets?${searchParams.toString()}`);
 }
 
 export function TicketsTable() {

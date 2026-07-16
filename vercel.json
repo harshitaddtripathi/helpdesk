@@ -4,14 +4,15 @@
   "installCommand": "bun install --frozen-lockfile --ignore-scripts",
   "buildCommand": "bun run build:client",
   "outputDirectory": "dist/client",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "https://helpdesk-5dy2.onrender.com/api/:path*"
+      "src": "/api/(.*)",
+      "dest": "${API_BASE_URL}/api/$1",
+      "env": ["API_BASE_URL"]
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
