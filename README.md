@@ -52,7 +52,9 @@ The frontend can be deployed to Vercel from this repo. Set this Vercel environme
 API_BASE_URL="https://your-render-service.onrender.com"
 ```
 
-Do not include a trailing slash. Also set the backend service `CLIENT_ORIGIN` to the primary Vercel frontend URL, and set `BETTER_AUTH_TRUSTED_ORIGINS` to every frontend origin that can call the backend. Vercel preview URLs can be added with a wildcard, for example:
+Do not include a trailing slash. Do not set `VITE_API_BASE_URL` in Vercel; browser requests should stay relative to the Vercel app so the `/api/*` proxy handles them.
+
+Also set the backend service `CLIENT_ORIGIN` to the primary Vercel frontend URL, and set `BETTER_AUTH_TRUSTED_ORIGINS` to every frontend origin that can call the backend. Vercel preview URLs can be added with a wildcard, for example:
 
 ```sh
 BETTER_AUTH_TRUSTED_ORIGINS="https://your-production-domain.vercel.app,https://helpdesk-*-your-vercel-team.vercel.app"
