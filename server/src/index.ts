@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import path from "node:path";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -84,10 +85,18 @@ app.use("/api/email", emailRouter);
 
 if (env.NODE_ENV === "production") {
   const clientDist = path.join(process.cwd(), "dist", "client");
-  app.use(express.static(clientDist));
-  app.get(/^\/(?!api\/).*/, (_req, res) => {
-    res.sendFile(path.join(clientDist, "index.html"));
-  });
+  const clientIndex = path.join(clientDist, "index.html");
+
+  if (existsSync(clientIndex)) {
+    app.use(express.static(clientDist));
+    app.get(/^\/(?!api\/).*/, (_req, res) => {
+      res.sendFile(clientIndex);
+    });
+  } else {
+    app.get("/", (_req, res) => {
+      res.json({ status: "ok", service: "ai-helpdesk-api" });
+    });
+  }
 }
 
 app.use(errorHandler);

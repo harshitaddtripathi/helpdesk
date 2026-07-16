@@ -71,6 +71,41 @@ After the first deploy, seed the initial users once from the Railway shell or CL
 bun run db:seed
 ```
 
+## Render backend deployment
+
+This repo includes `render.yaml` for deploying only the backend API on Render. No folder restructuring is required; Render can build from the repository root.
+
+Render settings:
+
+```sh
+Build Command: bun install --frozen-lockfile && bun run build:backend
+Pre-Deploy Command: bun run db:deploy
+Start Command: bun run start
+Health Check Path: /health
+```
+
+Set these variables on the Render service:
+
+```sh
+PORT=10000
+DATABASE_URL="your Supabase pooled/runtime connection string"
+DIRECT_URL="your Supabase direct connection string"
+CLIENT_ORIGIN="https://your-frontend-domain"
+BETTER_AUTH_TRUSTED_ORIGINS="https://your-frontend-domain"
+BETTER_AUTH_URL="https://your-render-service.onrender.com"
+BETTER_AUTH_SECRET="generate-a-random-32-byte-or-longer-secret"
+WEBHOOK_SECRET="generate-a-random-32-byte-or-longer-secret"
+EMAIL_WEBHOOK_SECRET="generate-a-random-32-byte-or-longer-secret"
+OPENAI_API_KEY=""
+CODEX_API_KEY=""
+```
+
+After the first successful Render deploy, seed initial users once from the Render shell:
+
+```sh
+bun run db:seed
+```
+
 ## Playwright setup
 
 Playwright is configured to use a separate PostgreSQL database on port `5433`.

@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: ai-helpdesk-api
+    runtime: node
+    buildCommand: bun install --frozen-lockfile && bun run build:backend
+    preDeployCommand: bun run db:deploy
+    startCommand: bun run start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: BETTER_AUTH_TRUSTED_ORIGINS
+        sync: false
+      - key: BETTER_AUTH_URL
+        fromService:
+          type: web
+          name: ai-helpdesk-api
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: WEBHOOK_SECRET
+        sync: false
+      - key: EMAIL_WEBHOOK_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: CODEX_API_KEY
+        sync: false
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+      - key: SEED_AGENT_PASSWORD
+        sync: false
