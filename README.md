@@ -46,13 +46,13 @@ Default admin credentials come from `.env`:
 
 ## Vercel frontend deployment
 
-The frontend can be deployed to Vercel from this repo. Set this Vercel environment variable so `/api/*` requests are proxied to the backend service:
+The frontend can be deployed to Vercel from this repo. Set this Vercel environment variable so browser API and auth requests go to the backend service:
 
 ```sh
-API_BASE_URL="https://your-render-service.onrender.com"
+VITE_API_BASE_URL="https://your-render-service.onrender.com"
 ```
 
-Do not include a trailing slash. Do not set `VITE_API_BASE_URL` in Vercel; browser requests should stay relative to the Vercel app so the `/api/*` proxy handles them.
+Do not include a trailing slash.
 
 Also set the backend service `CLIENT_ORIGIN` to the primary Vercel frontend URL, and set `BETTER_AUTH_TRUSTED_ORIGINS` to every frontend origin that can call the backend. Vercel preview URLs can be added with a wildcard, for example:
 
