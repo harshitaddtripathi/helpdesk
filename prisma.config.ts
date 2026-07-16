@@ -1,13 +1,14 @@
 import { config } from "dotenv";
-import { defineConfig, env } from "prisma/config";
-
-type Env = {
-  DATABASE_URL: string;
-  DIRECT_URL: string;
-};
+import { defineConfig } from "prisma/config";
 
 config({ path: ".env.local", override: false });
 config({ path: ".env", override: false });
+
+const datasourceUrl = process.env.DIRECT_URL?.trim() || process.env.DATABASE_URL?.trim();
+
+if (!datasourceUrl) {
+  throw new Error("Prisma requires DIRECT_URL or DATABASE_URL to be set.");
+}
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -16,6 +17,6 @@ export default defineConfig({
     seed: "bun prisma/seed.ts"
   },
   datasource: {
-    url: env<Env>("DIRECT_URL")
+    url: datasourceUrl
   }
 });

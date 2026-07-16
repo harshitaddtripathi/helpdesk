@@ -100,6 +100,8 @@ OPENAI_API_KEY=""
 CODEX_API_KEY=""
 ```
 
+Render does not read local `.env` or `server/.env` files. Add these values in the Render dashboard under the service's Environment tab, or provide them when syncing the Blueprint.
+
 After the first successful Render deploy, seed initial users once from the Render shell:
 
 ```sh
