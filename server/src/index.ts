@@ -13,6 +13,7 @@ import { ticketsRouter } from "./routes/tickets";
 import { usersRouter } from "./routes/users";
 import { webhooksRouter } from "./routes/webhooks";
 import { auth } from "./lib/auth";
+import { ensureDefaultKnowledgeBase } from "./lib/default-knowledge-base";
 import { env } from "./lib/env";
 import { startTicketClassificationWorker } from "./lib/ticket-classification-queue";
 import { errorHandler } from "./middleware/error-handler";
@@ -71,6 +72,12 @@ app.use(cookieParser());
 
 if (!env.WEBHOOK_SECRET) {
   console.warn("WEBHOOK_SECRET is not set; inbound email webhooks will reject requests.");
+}
+
+if (env.NODE_ENV === "production") {
+  void ensureDefaultKnowledgeBase().catch((error) => {
+    console.warn("Default knowledge base seed failed:", error);
+  });
 }
 
 void startTicketClassificationWorker().catch((error) => {
