@@ -4,17 +4,19 @@ import { receiveInboundEmail } from "./inbound-email";
 
 const mocks = vi.hoisted(() => ({
   ticketFindFirst: vi.fn(),
+  ticketFindUnique: vi.fn(),
   ticketCreate: vi.fn(),
   ticketMessageCreate: vi.fn(),
   assignTicketToAiAgent: vi.fn(),
   autoResolveTicketById: vi.fn(),
-  enqueueTicketClassification: vi.fn()
+  classifyTicketById: vi.fn()
 }));
 
 vi.mock("./prisma", () => ({
   prisma: {
     ticket: {
       findFirst: mocks.ticketFindFirst,
+      findUnique: mocks.ticketFindUnique,
       create: mocks.ticketCreate
     },
     ticketMessage: {
@@ -31,8 +33,8 @@ vi.mock("./ticket-auto-resolver", () => ({
   autoResolveTicketById: mocks.autoResolveTicketById
 }));
 
-vi.mock("./ticket-classification-queue", () => ({
-  enqueueTicketClassification: mocks.enqueueTicketClassification
+vi.mock("./ticket-classifier", () => ({
+  classifyTicketById: mocks.classifyTicketById
 }));
 
 const email = {
@@ -46,7 +48,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.assignTicketToAiAgent.mockResolvedValue(true);
   mocks.autoResolveTicketById.mockResolvedValue({ resolved: false, reason: "No article." });
-  mocks.enqueueTicketClassification.mockResolvedValue("job-1");
+  mocks.classifyTicketById.mockResolvedValue(undefined);
 });
 
 describe("receiveInboundEmail", () => {
@@ -61,10 +63,27 @@ describe("receiveInboundEmail", () => {
 
     mocks.ticketFindFirst.mockResolvedValue(null);
     mocks.ticketCreate.mockResolvedValue(ticket);
+    mocks.ticketFindUnique.mockResolvedValue({
+      ...ticket,
+      categoryId: "category-refund",
+      category: {
+        id: "category-refund",
+        name: "Refund Request",
+        slug: "refund_request"
+      }
+    });
 
     await expect(receiveInboundEmail(email)).resolves.toEqual({
       status: "created",
-      ticket
+      ticket: {
+        ...ticket,
+        categoryId: "category-refund",
+        category: {
+          id: "category-refund",
+          name: "Refund Request",
+          slug: "refund_request"
+        }
+      }
     });
 
     expect(mocks.ticketFindFirst).toHaveBeenCalledWith(
@@ -91,7 +110,14 @@ describe("receiveInboundEmail", () => {
       })
     );
     expect(mocks.assignTicketToAiAgent).toHaveBeenCalledWith(42);
-    expect(mocks.enqueueTicketClassification).toHaveBeenCalledWith(42);
+    expect(mocks.classifyTicketById).toHaveBeenCalledWith(42);
+    expect(mocks.ticketFindUnique).toHaveBeenCalledWith({
+      where: { id: 42 },
+      include: {
+        category: true,
+        messages: true
+      }
+    });
     expect(mocks.autoResolveTicketById).toHaveBeenCalledWith(42);
   });
 
@@ -112,10 +138,27 @@ describe("receiveInboundEmail", () => {
 
     mocks.ticketFindFirst.mockResolvedValue(ticket);
     mocks.ticketMessageCreate.mockResolvedValue(message);
+    mocks.ticketFindUnique.mockResolvedValue({
+      ...ticket,
+      categoryId: "category-refund",
+      category: {
+        id: "category-refund",
+        name: "Refund Request",
+        slug: "refund_request"
+      }
+    });
 
     await expect(receiveInboundEmail(email)).resolves.toEqual({
       status: "appended",
-      ticket,
+      ticket: {
+        ...ticket,
+        categoryId: "category-refund",
+        category: {
+          id: "category-refund",
+          name: "Refund Request",
+          slug: "refund_request"
+        }
+      },
       message
     });
 
@@ -130,7 +173,7 @@ describe("receiveInboundEmail", () => {
     });
     expect(mocks.ticketCreate).not.toHaveBeenCalled();
     expect(mocks.assignTicketToAiAgent).not.toHaveBeenCalled();
-    expect(mocks.enqueueTicketClassification).toHaveBeenCalledWith(7);
+    expect(mocks.classifyTicketById).toHaveBeenCalledWith(7);
     expect(mocks.autoResolveTicketById).toHaveBeenCalledWith(7);
   });
 });

@@ -3,7 +3,7 @@ import type { InboundEmailInput } from "core/schemas/tickets";
 import { assignTicketToAiAgent } from "./ai-agent";
 import { prisma } from "./prisma";
 import { autoResolveTicketById } from "./ticket-auto-resolver";
-import { enqueueTicketClassification } from "./ticket-classification-queue";
+import { classifyTicketById } from "./ticket-classifier";
 
 export type InboundEmailResult =
   | {
@@ -22,16 +22,15 @@ export async function receiveInboundEmail(body: InboundEmailInput): Promise<Inbo
 
   if (existingTicket) {
     const message = await appendInboundMessage(existingTicket.id, body);
-
-    if (!existingTicket.categoryId) {
-      queueClassification(existingTicket.id);
-    }
+    const ticket = !existingTicket.categoryId
+      ? await classifyAndRefreshTicket(existingTicket.id, existingTicket)
+      : existingTicket;
 
     queueAutoResolution(existingTicket.id);
 
     return {
       status: "appended",
-      ticket: existingTicket,
+      ticket,
       message
     };
   }
@@ -39,12 +38,12 @@ export async function receiveInboundEmail(body: InboundEmailInput): Promise<Inbo
   const ticket = await createTicketFromEmail(body, subject);
 
   await assignTicketToAiAgent(ticket.id);
-  queueClassification(ticket.id);
+  const classifiedTicket = await classifyAndRefreshTicket(ticket.id, ticket);
   queueAutoResolution(ticket.id);
 
   return {
     status: "created",
-    ticket
+    ticket: classifiedTicket
   };
 }
 
@@ -102,15 +101,32 @@ function createTicketFromEmail(body: InboundEmailInput, subject: string) {
   });
 }
 
-function queueClassification(ticketId: number) {
-  void enqueueTicketClassification(ticketId).catch((error) => {
-    console.warn(`Failed to enqueue ticket classification for ticket ${ticketId}:`, error);
-  });
-}
-
 function queueAutoResolution(ticketId: number) {
   void autoResolveTicketById(ticketId).catch((error) => {
     console.warn(`Failed to auto-resolve ticket ${ticketId}:`, error);
+  });
+}
+
+async function classifyAndRefreshTicket<TFallback>(ticketId: number, fallback: TFallback) {
+  try {
+    await classifyTicketById(ticketId);
+  } catch (error) {
+    console.warn(`Failed to classify ticket ${ticketId}:`, error);
+    return fallback;
+  }
+
+  const ticket = await findTicketWithCategory(ticketId);
+
+  return ticket ?? fallback;
+}
+
+function findTicketWithCategory(ticketId: number) {
+  return prisma.ticket.findUnique({
+    where: { id: ticketId },
+    include: {
+      category: true,
+      messages: true
+    }
   });
 }
 
