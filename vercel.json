@@ -4,6 +4,9 @@
   "installCommand": "bun install --frozen-lockfile --ignore-scripts",
   "buildCommand": "bun run build:client",
   "outputDirectory": "dist/client",
+  "env": {
+    "VITE_ENABLE_EMAIL_SIMULATOR": "true"
+  },
   "rewrites": [
     {
       "source": "/(.*)",
