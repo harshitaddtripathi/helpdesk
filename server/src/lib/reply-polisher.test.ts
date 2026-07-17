@@ -13,7 +13,8 @@ import { prisma } from "./prisma";
 
 const mocks = vi.hoisted(() => ({
   env: {
-    GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key"
+    GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key",
+    GOOGLE_GENERATIVE_AI_MODEL: "gemini-3.5-flash"
   },
   findUnique: vi.fn(),
   generateText: vi.fn(),
@@ -90,7 +91,7 @@ describe("reply polisher", () => {
       "Hi Mina,\n\nWe can help with this and will keep the next steps clear.\n\nHarshita Tripathi Support"
     );
 
-    expect(googleMock).toHaveBeenCalledWith("gemini-2.5-flash");
+    expect(googleMock).toHaveBeenCalledWith("gemini-3.5-flash");
     expect(generateTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
         maxOutputTokens: 600,
@@ -193,7 +194,7 @@ describe("reply polisher", () => {
 
     await expect(polishReply(ticket, "refund ok", "Harshita Tripathi Support")).rejects.toMatchObject({
       status: 502,
-      message: "Google Gemini could not find gemini-2.5-flash for this API key."
+      message: "Google Gemini could not find gemini-3.5-flash for this API key."
     });
   });
 });

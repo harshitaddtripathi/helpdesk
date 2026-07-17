@@ -12,7 +12,8 @@ import { prisma } from "./prisma";
 
 const mocks = vi.hoisted(() => ({
   env: {
-    GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key"
+    GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key",
+    GOOGLE_GENERATIVE_AI_MODEL: "gemini-3.5-flash"
   },
   findUnique: vi.fn(),
   findManyCategories: vi.fn(),
@@ -125,7 +126,7 @@ describe("ticket classifier", () => {
       applied: true
     });
 
-    expect(googleMock).toHaveBeenCalledWith("gemini-2.5-flash");
+    expect(googleMock).toHaveBeenCalledWith("gemini-3.5-flash");
     expect(generateTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
         maxOutputTokens: 50,
@@ -146,7 +147,7 @@ describe("ticket classifier", () => {
         type: "CLASSIFICATION",
         content: "refund_request",
         metadata: expect.objectContaining({
-          model: "gemini-2.5-flash",
+          model: "gemini-3.5-flash",
           applied: true
         })
       })

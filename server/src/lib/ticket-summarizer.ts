@@ -40,7 +40,7 @@ export function ensureTicketSummarizerConfigured() {
 export async function summarizeTicket(ticket: TicketSummaryContext) {
   try {
     const { text } = await generateText({
-      model: google("gemini-2.5-flash"),
+      model: google(env.GOOGLE_GENERATIVE_AI_MODEL),
       instructions:
         "Summarize a helpdesk ticket and its conversation history for a support agent. " +
         "Use only the ticket content. Do not invent facts, policies, refunds, timelines, or commitments. " +
@@ -110,11 +110,11 @@ function getAiErrorMessage(error: APICallError) {
   }
 
   if (error.statusCode === 403) {
-    return "Google Gemini rejected this request. Check that the API key has access to gemini-2.5-flash.";
+    return `Google Gemini rejected this request. Check that the API key has access to ${env.GOOGLE_GENERATIVE_AI_MODEL}.`;
   }
 
   if (error.statusCode === 404) {
-    return "Google Gemini could not find gemini-2.5-flash for this API key.";
+    return `Google Gemini could not find ${env.GOOGLE_GENERATIVE_AI_MODEL} for this API key.`;
   }
 
   if (error.statusCode === 429) {

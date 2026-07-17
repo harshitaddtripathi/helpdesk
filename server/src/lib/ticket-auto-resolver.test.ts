@@ -10,7 +10,8 @@ import { prisma } from "./prisma";
 
 const mocks = vi.hoisted(() => ({
   env: {
-    GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key"
+    GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key",
+    GOOGLE_GENERATIVE_AI_MODEL: "gemini-3.5-flash"
   },
   findUniqueTicket: vi.fn(),
   updateTicket: vi.fn(),
@@ -180,7 +181,7 @@ describe("ticket auto resolver", () => {
       orderBy: { updatedAt: "desc" },
       take: 50
     });
-    expect(googleMock).toHaveBeenCalledWith("gemini-2.5-flash");
+    expect(googleMock).toHaveBeenCalledWith("gemini-3.5-flash");
     expect(generateTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
         maxOutputTokens: 700,
@@ -223,7 +224,7 @@ describe("ticket auto resolver", () => {
           "Hi Customer,\n\nUse the forgot password link and follow the email instructions.\n\nHarshita Tripathi Support",
         metadata: expect.objectContaining({
           source: "auto-resolution",
-          model: "gemini-2.5-flash",
+          model: "gemini-3.5-flash",
           articleId: "article-password-reset",
           articleTitle: "Reset your password"
         })

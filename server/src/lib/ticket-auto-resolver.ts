@@ -17,7 +17,7 @@ import { env } from "./env";
 import { HttpError } from "./http";
 import { prisma } from "./prisma";
 
-const ticketAutoResolverModel = "gemini-2.5-flash";
+const ticketAutoResolverModel = env.GOOGLE_GENERATIVE_AI_MODEL;
 const autoResolutionSource = "auto-resolution";
 const maxCandidateArticles = 8;
 const maxFetchedArticles = 50;
@@ -381,11 +381,11 @@ function getAiErrorMessage(error: APICallError) {
   }
 
   if (error.statusCode === 403) {
-    return "Google Gemini rejected this request. Check that the API key has access to gemini-2.5-flash.";
+    return `Google Gemini rejected this request. Check that the API key has access to ${ticketAutoResolverModel}.`;
   }
 
   if (error.statusCode === 404) {
-    return "Google Gemini could not find gemini-2.5-flash for this API key.";
+    return `Google Gemini could not find ${ticketAutoResolverModel} for this API key.`;
   }
 
   if (error.statusCode === 429) {

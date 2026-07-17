@@ -76,6 +76,7 @@ BETTER_AUTH_SECRET="generate-a-random-32-byte-or-longer-secret"
 WEBHOOK_SECRET="generate-a-random-32-byte-or-longer-secret"
 EMAIL_WEBHOOK_SECRET="generate-a-random-32-byte-or-longer-secret"
 GOOGLE_GENERATIVE_AI_API_KEY=""
+GOOGLE_GENERATIVE_AI_MODEL="gemini-3.5-flash"
 CODEX_API_KEY=""
 ```
 
@@ -119,6 +120,7 @@ BETTER_AUTH_SECRET="generate-a-random-32-byte-or-longer-secret"
 WEBHOOK_SECRET="generate-a-random-32-byte-or-longer-secret"
 EMAIL_WEBHOOK_SECRET="generate-a-random-32-byte-or-longer-secret"
 GOOGLE_GENERATIVE_AI_API_KEY=""
+GOOGLE_GENERATIVE_AI_MODEL="gemini-3.5-flash"
 CODEX_API_KEY=""
 ```
 

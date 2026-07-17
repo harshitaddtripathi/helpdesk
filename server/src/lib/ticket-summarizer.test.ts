@@ -13,7 +13,8 @@ import { prisma } from "./prisma";
 
 const mocks = vi.hoisted(() => ({
   env: {
-    GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key"
+    GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key",
+    GOOGLE_GENERATIVE_AI_MODEL: "gemini-3.5-flash"
   },
   findUnique: vi.fn(),
   generateText: vi.fn(),
@@ -96,7 +97,7 @@ describe("ticket summarizer", () => {
       "- Customer needs a refund.\n- Agent is checking the order."
     );
 
-    expect(googleMock).toHaveBeenCalledWith("gemini-2.5-flash");
+    expect(googleMock).toHaveBeenCalledWith("gemini-3.5-flash");
     expect(generateTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
         maxOutputTokens: 700,

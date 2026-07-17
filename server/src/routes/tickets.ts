@@ -9,6 +9,7 @@ import { ticketStatuses } from "core/constants/ticket-status";
 import { z } from "zod";
 import { asyncHandler, HttpError, requireStringParam, validate } from "../lib/http";
 import { prisma } from "../lib/prisma";
+import { env } from "../lib/env";
 import {
   ensureReplyPolisherConfigured,
   getTicketPolishContext,
@@ -278,7 +279,7 @@ ticketsRouter.post(
         type: AiOutputType.SUMMARY,
         content,
         metadata: {
-          model: "gemini-2.5-flash",
+          model: env.GOOGLE_GENERATIVE_AI_MODEL,
           messageCount: ticket.messages.length
         }
       }

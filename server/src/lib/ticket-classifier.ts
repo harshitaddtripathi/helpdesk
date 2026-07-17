@@ -14,7 +14,7 @@ import { env } from "./env";
 import { HttpError } from "./http";
 import { prisma } from "./prisma";
 
-const ticketClassifierModel = "gemini-2.5-flash";
+const ticketClassifierModel = env.GOOGLE_GENERATIVE_AI_MODEL;
 const uncategorizedOutput = "uncategorized";
 
 type TicketClassifierCategory = {
@@ -221,11 +221,11 @@ function getAiErrorMessage(error: APICallError) {
   }
 
   if (error.statusCode === 403) {
-    return "Google Gemini rejected this request. Check that the API key has access to gemini-2.5-flash.";
+    return `Google Gemini rejected this request. Check that the API key has access to ${ticketClassifierModel}.`;
   }
 
   if (error.statusCode === 404) {
-    return "Google Gemini could not find gemini-2.5-flash for this API key.";
+    return `Google Gemini could not find ${ticketClassifierModel} for this API key.`;
   }
 
   if (error.statusCode === 429) {
