@@ -30,10 +30,31 @@ export function KnowledgeBasePage() {
     setCategories(categoryResult.categories);
   }
 
-  async function handleCreate(event: FormEvent<HTMLFormElement>) {
+  async function handleCreateCategory(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    const formData = new FormData(event.currentTarget);
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    try {
+      await apiFetch("/api/categories", {
+        method: "POST",
+        body: JSON.stringify({
+          name: formData.get("name")
+        })
+      });
+      form.reset();
+      await loadData();
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Failed to create category.");
+    }
+  }
+
+  async function handleCreateArticle(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    const form = event.currentTarget;
+    const formData = new FormData(form);
 
     try {
       await apiFetch("/api/knowledge-base", {
@@ -42,10 +63,10 @@ export function KnowledgeBasePage() {
           title: formData.get("title"),
           body: formData.get("body"),
           categorySlug: formData.get("categorySlug") || undefined,
-          active: true
+          active: formData.get("active") === "on"
         })
       });
-      event.currentTarget.reset();
+      form.reset();
       await loadData();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Failed to create article.");
@@ -67,63 +88,85 @@ export function KnowledgeBasePage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[420px_1fr]">
-      <form className="panel-surface rounded-lg p-4" onSubmit={handleCreate}>
-        <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-950 text-white">
-            <Plus aria-hidden="true" className="h-4 w-4" />
-          </span>
-          <h2 className="text-sm font-semibold text-slate-950">New article</h2>
-        </div>
-        <label className="mt-4 block text-sm font-semibold text-slate-700">
-          Title
-          <input className="field-control mt-1 h-10 w-full rounded-md px-3 text-sm" name="title" />
-        </label>
-        <label className="mt-4 block text-sm font-semibold text-slate-700">
-          Category
-          <select className="field-control mt-1 h-10 w-full rounded-md px-3 text-sm" name="categorySlug">
-            <option value="">None</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.slug}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="mt-4 block text-sm font-semibold text-slate-700">
-          Body
-          <textarea
-            className="field-control mt-1 min-h-40 w-full rounded-md px-3 py-2 text-sm"
-            name="body"
-          />
-        </label>
-        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-        <Button className="mt-4" type="submit">
-          Save article
-        </Button>
-      </form>
-
-      <div className="space-y-3">
-        {articles.map((article) => (
-          <article className="panel-surface rounded-lg p-4" key={article.id}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-2">
-                <BookOpen aria-hidden="true" className="h-4 w-4 shrink-0 text-blue-600" />
-                <h3 className="truncate font-semibold text-slate-950">{article.title}</h3>
-              </div>
-              <span className="shrink-0 rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
-                {article.category?.name ?? "No category"}
+        <div className="space-y-4">
+          <form className="panel-surface rounded-lg p-4" onSubmit={handleCreateCategory}>
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-950 text-white">
+                <Plus aria-hidden="true" className="h-4 w-4" />
               </span>
+              <h2 className="text-sm font-semibold text-slate-950">New category</h2>
             </div>
-            <p className="mt-2 line-clamp-3 text-sm text-slate-600">{article.body}</p>
-          </article>
-        ))}
+            <label className="mt-4 block text-sm font-semibold text-slate-700">
+              Name
+              <input className="field-control mt-1 h-10 w-full rounded-md px-3 text-sm" name="name" />
+            </label>
+            <Button className="mt-4" type="submit">
+              Save category
+            </Button>
+          </form>
 
-        {articles.length === 0 ? (
-          <p className="panel-surface rounded-lg p-6 text-center text-sm text-slate-500">
-            No knowledge base articles yet.
-          </p>
-        ) : null}
-      </div>
+          <form className="panel-surface rounded-lg p-4" onSubmit={handleCreateArticle}>
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-md bg-slate-950 text-white">
+                <Plus aria-hidden="true" className="h-4 w-4" />
+              </span>
+              <h2 className="text-sm font-semibold text-slate-950">New article</h2>
+            </div>
+            <label className="mt-4 block text-sm font-semibold text-slate-700">
+              Title
+              <input className="field-control mt-1 h-10 w-full rounded-md px-3 text-sm" name="title" />
+            </label>
+            <label className="mt-4 block text-sm font-semibold text-slate-700">
+              Category
+              <select className="field-control mt-1 h-10 w-full rounded-md px-3 text-sm" name="categorySlug">
+                <option value="">None</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.slug}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="mt-4 block text-sm font-semibold text-slate-700">
+              Body
+              <textarea
+                className="field-control mt-1 min-h-40 w-full rounded-md px-3 py-2 text-sm"
+                name="body"
+              />
+            </label>
+            <label className="mt-4 flex items-center gap-2 text-sm font-semibold text-slate-700">
+              <input className="h-4 w-4 rounded border-slate-300" defaultChecked name="active" type="checkbox" />
+              Active
+            </label>
+            {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+            <Button className="mt-4" type="submit">
+              Save article
+            </Button>
+          </form>
+        </div>
+
+        <div className="space-y-3">
+          {articles.map((article) => (
+            <article className="panel-surface rounded-lg p-4" key={article.id}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
+                  <BookOpen aria-hidden="true" className="h-4 w-4 shrink-0 text-blue-600" />
+                  <h3 className="truncate font-semibold text-slate-950">{article.title}</h3>
+                </div>
+                <span className="shrink-0 rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
+                  {article.active ? "Active" : "Inactive"} - {article.category?.name ?? "No category"}
+                </span>
+              </div>
+              <p className="mt-2 line-clamp-3 text-sm text-slate-600">{article.body}</p>
+            </article>
+          ))}
+
+          {articles.length === 0 ? (
+            <p className="panel-surface rounded-lg p-6 text-center text-sm text-slate-500">
+              No knowledge base articles yet.
+            </p>
+          ) : null}
+        </div>
       </div>
     </div>
   );

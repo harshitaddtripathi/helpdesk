@@ -47,6 +47,7 @@ export function UsersTable({
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead>Created</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -54,7 +55,7 @@ export function UsersTable({
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
-                <TableCell className="text-slate-500" colSpan={5}>
+                <TableCell className="text-slate-500" colSpan={6}>
                   No users found.
                 </TableCell>
               </TableRow>
@@ -66,6 +67,11 @@ export function UsersTable({
                   <TableCell>
                     <Badge variant={user.role === UserRole.Admin ? "default" : "secondary"}>
                       {user.role}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={user.active ? "default" : "secondary"}>
+                      {user.active ? "Active" : "Inactive"}
                     </Badge>
                   </TableCell>
                   <TableCell className="font-data text-xs text-slate-600">
@@ -113,6 +119,7 @@ function UsersTableSkeleton() {
           <TableHead>Name</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Role</TableHead>
+          <TableHead>Status</TableHead>
           <TableHead>Created</TableHead>
           <TableHead className="text-right">Actions</TableHead>
         </TableRow>
@@ -125,6 +132,9 @@ function UsersTableSkeleton() {
             </TableCell>
             <TableCell>
               <Skeleton className="h-4 w-52" />
+            </TableCell>
+            <TableCell>
+              <Skeleton className="h-6 w-16" />
             </TableCell>
             <TableCell>
               <Skeleton className="h-6 w-16" />

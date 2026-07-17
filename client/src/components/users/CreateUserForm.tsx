@@ -17,7 +17,8 @@ const inputClassName = (hasError: boolean) =>
 const createUserFormSchema = z.object({
   name: createUserSchema.shape.name,
   agentEmail: createUserSchema.shape.email,
-  agentPassword: createUserSchema.shape.password
+  agentPassword: createUserSchema.shape.password,
+  active: z.boolean().optional()
 });
 
 const editUserFormSchema = z.object({
@@ -29,7 +30,8 @@ const editUserFormSchema = z.object({
     .refine(
       (password) => password.length === 0 || password.length >= 8,
       "Password must be at least 8 letters."
-    )
+    ),
+  active: z.boolean().optional()
 });
 
 type UserFormValues = z.infer<typeof createUserFormSchema>;
@@ -61,7 +63,8 @@ export function CreateUserForm(props: UserFormProps) {
     defaultValues: {
       name: user?.name ?? "",
       agentEmail: user?.email ?? "",
-      agentPassword: ""
+      agentPassword: "",
+      active: user?.active ?? true
     }
   });
   const formHeading = isEditMode ? "Edit Agent" : "Create Agent";
@@ -71,7 +74,8 @@ export function CreateUserForm(props: UserFormProps) {
     reset({
       name: user?.name ?? "",
       agentEmail: user?.email ?? "",
-      agentPassword: ""
+      agentPassword: "",
+      active: user?.active ?? true
     });
     setFormError("");
   }, [reset, user?.email, user?.id, user?.name]);
@@ -81,7 +85,8 @@ export function CreateUserForm(props: UserFormProps) {
       if (props.mode === "edit") {
         const payload: UpdateAgentInput = {
           name: values.name,
-          email: values.agentEmail
+          email: values.agentEmail,
+          active: values.active ?? true
         };
         const password = values.agentPassword.trim();
 
@@ -197,6 +202,13 @@ export function CreateUserForm(props: UserFormProps) {
           </span>
         ) : null}
       </label>
+
+      {isEditMode ? (
+        <label className="mt-4 flex items-center gap-2 text-sm font-medium text-slate-700">
+          <input className="h-4 w-4 rounded border-slate-300" type="checkbox" {...register("active")} />
+          Active
+        </label>
+      ) : null}
 
       {formError ? (
         <Alert className="mt-4" variant="destructive">

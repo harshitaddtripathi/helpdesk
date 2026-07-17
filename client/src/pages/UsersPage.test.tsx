@@ -339,7 +339,8 @@ describe("UsersPage", () => {
         method: "PATCH",
         body: JSON.stringify({
           name: "Renamed Agent",
-          email: "renamed-agent@example.com"
+          email: "renamed-agent@example.com",
+          active: true
         })
       });
     });

@@ -155,7 +155,8 @@ describe("CreateUserForm", () => {
         method: "PATCH",
         body: JSON.stringify({
           name: "Renamed Agent",
-          email: "agent@example.com"
+          email: "agent@example.com",
+          active: true
         })
       });
     });
@@ -180,6 +181,7 @@ describe("CreateUserForm", () => {
         body: JSON.stringify({
           name: "Agent User",
           email: "agent@example.com",
+          active: true,
           password: "newpass123"
         })
       });
