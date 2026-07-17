@@ -75,7 +75,7 @@ BETTER_AUTH_TRUSTED_ORIGINS="https://your-app.up.railway.app"
 BETTER_AUTH_SECRET="generate-a-random-32-byte-or-longer-secret"
 WEBHOOK_SECRET="generate-a-random-32-byte-or-longer-secret"
 EMAIL_WEBHOOK_SECRET="generate-a-random-32-byte-or-longer-secret"
-OPENAI_API_KEY=""
+GOOGLE_GENERATIVE_AI_API_KEY=""
 CODEX_API_KEY=""
 ```
 
@@ -118,7 +118,7 @@ BETTER_AUTH_URL="https://your-render-service.onrender.com"
 BETTER_AUTH_SECRET="generate-a-random-32-byte-or-longer-secret"
 WEBHOOK_SECRET="generate-a-random-32-byte-or-longer-secret"
 EMAIL_WEBHOOK_SECRET="generate-a-random-32-byte-or-longer-secret"
-OPENAI_API_KEY=""
+GOOGLE_GENERATIVE_AI_API_KEY=""
 CODEX_API_KEY=""
 ```
 

@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import {
   APICallError,
   LoadAPIKeyError,
@@ -32,15 +32,15 @@ export async function getTicketSummaryContext(ticketId: number) {
 }
 
 export function ensureTicketSummarizerConfigured() {
-  if (!env.OPENAI_API_KEY) {
-    throw new HttpError(501, "OPENAI_API_KEY is not configured.");
+  if (!env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    throw new HttpError(501, "GOOGLE_GENERATIVE_AI_API_KEY is not configured.");
   }
 }
 
 export async function summarizeTicket(ticket: TicketSummaryContext) {
   try {
     const { text } = await generateText({
-      model: openai("gpt-5-nano"),
+      model: google("gemini-2.5-flash"),
       instructions:
         "Summarize a helpdesk ticket and its conversation history for a support agent. " +
         "Use only the ticket content. Do not invent facts, policies, refunds, timelines, or commitments. " +
@@ -78,15 +78,15 @@ function toAiHttpError(error: unknown) {
   }
 
   if (LoadAPIKeyError.isInstance(error)) {
-    return new HttpError(501, "OPENAI_API_KEY is not configured correctly.");
+    return new HttpError(501, "GOOGLE_GENERATIVE_AI_API_KEY is not configured correctly.");
   }
 
   if (NoSuchModelError.isInstance(error)) {
-    return new HttpError(502, "The configured OpenAI model is not available.");
+    return new HttpError(502, "The configured Google Gemini model is not available.");
   }
 
   if (UnsupportedFunctionalityError.isInstance(error)) {
-    return new HttpError(502, `The configured OpenAI model does not support this request: ${error.functionality}.`);
+    return new HttpError(502, `The configured Google Gemini model does not support this request: ${error.functionality}.`);
   }
 
   return new HttpError(502, "AI ticket summarization failed.");
@@ -106,30 +106,30 @@ function getAiErrorStatus(statusCode: number | undefined) {
 
 function getAiErrorMessage(error: APICallError) {
   if (error.statusCode === 401) {
-    return "OpenAI rejected the API key. Check OPENAI_API_KEY.";
+    return "Google Gemini rejected the API key. Check GOOGLE_GENERATIVE_AI_API_KEY.";
   }
 
   if (error.statusCode === 403) {
-    return "OpenAI rejected this request. Check that the API key has access to gpt-5-nano.";
+    return "Google Gemini rejected this request. Check that the API key has access to gemini-2.5-flash.";
   }
 
   if (error.statusCode === 404) {
-    return "OpenAI could not find gpt-5-nano for this API key.";
+    return "Google Gemini could not find gemini-2.5-flash for this API key.";
   }
 
   if (error.statusCode === 429) {
-    return "OpenAI rate limit or quota was reached. Try again later or check billing.";
+    return "Google Gemini rate limit or quota was reached. Try again later or check billing.";
   }
 
   if (error.statusCode === 400) {
-    return `OpenAI rejected the summary request: ${error.message}`;
+    return `Google Gemini rejected the summary request: ${error.message}`;
   }
 
   if (error.statusCode && error.statusCode >= 500) {
-    return "OpenAI is temporarily unavailable. Try again later.";
+    return "Google Gemini is temporarily unavailable. Try again later.";
   }
 
-  return "OpenAI could not summarize the ticket.";
+  return "Google Gemini could not summarize the ticket.";
 }
 
 function buildSummaryPrompt(ticket: TicketSummaryContext) {

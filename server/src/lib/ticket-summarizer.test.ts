@@ -1,6 +1,6 @@
 import { APICallError, generateText } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { HttpError } from "./http";
 import {
   ensureTicketSummarizerConfigured,
@@ -13,11 +13,11 @@ import { prisma } from "./prisma";
 
 const mocks = vi.hoisted(() => ({
   env: {
-    OPENAI_API_KEY: "test-openai-key"
+    GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key"
   },
   findUnique: vi.fn(),
   generateText: vi.fn(),
-  openai: vi.fn((modelId: string) => ({ modelId, provider: "openai" }))
+  google: vi.fn((modelId: string) => ({ modelId, provider: "google" }))
 }));
 
 vi.mock("./env", () => ({
@@ -32,8 +32,8 @@ vi.mock("./prisma", () => ({
   }
 }));
 
-vi.mock("@ai-sdk/openai", () => ({
-  openai: mocks.openai
+vi.mock("@ai-sdk/google", () => ({
+  google: mocks.google
 }));
 
 vi.mock("ai", async () => {
@@ -46,7 +46,7 @@ vi.mock("ai", async () => {
 });
 
 const generateTextMock = vi.mocked(generateText);
-const openaiMock = vi.mocked(openai);
+const googleMock = vi.mocked(google);
 const findUniqueMock = vi.mocked(prisma.ticket.findUnique);
 
 const ticket = {
@@ -82,7 +82,7 @@ const ticket = {
 } as TicketSummaryContext;
 
 beforeEach(() => {
-  mocks.env.OPENAI_API_KEY = "test-openai-key";
+  mocks.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-gemini-key";
   vi.clearAllMocks();
 });
 
@@ -96,7 +96,7 @@ describe("ticket summarizer", () => {
       "- Customer needs a refund.\n- Agent is checking the order."
     );
 
-    expect(openaiMock).toHaveBeenCalledWith("gpt-5-nano");
+    expect(googleMock).toHaveBeenCalledWith("gemini-2.5-flash");
     expect(generateTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
         maxOutputTokens: 700,
@@ -115,11 +115,11 @@ describe("ticket summarizer", () => {
     expect(request?.prompt).toContain("Agent at 2026-07-01T12:05:00.000Z: We are checking your order.");
   });
 
-  it("throws a configuration error when the OpenAI API key is missing", () => {
-    mocks.env.OPENAI_API_KEY = "";
+  it("throws a configuration error when the Google Gemini API key is missing", () => {
+    mocks.env.GOOGLE_GENERATIVE_AI_API_KEY = "";
 
     expect(() => ensureTicketSummarizerConfigured()).toThrow(
-      new HttpError(501, "OPENAI_API_KEY is not configured.")
+      new HttpError(501, "GOOGLE_GENERATIVE_AI_API_KEY is not configured.")
     );
   });
 
@@ -154,11 +154,11 @@ describe("ticket summarizer", () => {
     });
   });
 
-  it("maps OpenAI quota errors to a service-unavailable response", async () => {
+  it("maps Google Gemini quota errors to a service-unavailable response", async () => {
     generateTextMock.mockRejectedValueOnce(
       new APICallError({
         message: "quota exceeded",
-        url: "https://api.openai.com/v1/responses",
+        url: "https://generativelanguage.googleapis.com/v1beta/models",
         requestBodyValues: {},
         statusCode: 429,
         isRetryable: false
@@ -167,7 +167,7 @@ describe("ticket summarizer", () => {
 
     await expect(summarizeTicket(ticket)).rejects.toMatchObject({
       status: 503,
-      message: "OpenAI rate limit or quota was reached. Try again later or check billing."
+      message: "Google Gemini rate limit or quota was reached. Try again later or check billing."
     });
   });
 });

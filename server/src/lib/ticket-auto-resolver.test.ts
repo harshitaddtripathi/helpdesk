@@ -1,6 +1,6 @@
 import { APICallError, generateText } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { MessageDirection, SenderType, TicketStatus } from "@prisma/client";
 import {
   autoResolveTicketById,
@@ -10,7 +10,7 @@ import { prisma } from "./prisma";
 
 const mocks = vi.hoisted(() => ({
   env: {
-    OPENAI_API_KEY: "test-openai-key"
+    GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key"
   },
   findUniqueTicket: vi.fn(),
   updateTicket: vi.fn(),
@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
   createMessage: vi.fn(),
   createAiOutput: vi.fn(),
   generateText: vi.fn(),
-  openai: vi.fn((modelId: string) => ({ modelId, provider: "openai" }))
+  google: vi.fn((modelId: string) => ({ modelId, provider: "google" }))
 }));
 
 vi.mock("./env", () => ({
@@ -46,8 +46,8 @@ vi.mock("./prisma", () => ({
   }
 }));
 
-vi.mock("@ai-sdk/openai", () => ({
-  openai: mocks.openai
+vi.mock("@ai-sdk/google", () => ({
+  google: mocks.google
 }));
 
 vi.mock("ai", async () => {
@@ -60,7 +60,7 @@ vi.mock("ai", async () => {
 });
 
 const generateTextMock = vi.mocked(generateText);
-const openaiMock = vi.mocked(openai);
+const googleMock = vi.mocked(google);
 const findUniqueTicketMock = vi.mocked(prisma.ticket.findUnique);
 const updateManyTicketStatusMock = vi.mocked(prisma.ticket.updateMany);
 const findAiAgentMock = vi.mocked(prisma.user.findFirst);
@@ -117,7 +117,7 @@ const article = {
 };
 
 beforeEach(() => {
-  mocks.env.OPENAI_API_KEY = "test-openai-key";
+  mocks.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-gemini-key";
   vi.clearAllMocks();
   findUniqueTicketMock.mockResolvedValue(ticket);
   updateManyTicketStatusMock.mockResolvedValue({ count: 1 } as Awaited<ReturnType<typeof prisma.ticket.updateMany>>);
@@ -180,7 +180,7 @@ describe("ticket auto resolver", () => {
       orderBy: { updatedAt: "desc" },
       take: 50
     });
-    expect(openaiMock).toHaveBeenCalledWith("gpt-5-nano");
+    expect(googleMock).toHaveBeenCalledWith("gemini-2.5-flash");
     expect(generateTextMock).toHaveBeenCalledWith(
       expect.objectContaining({
         maxOutputTokens: 700,
@@ -223,7 +223,7 @@ describe("ticket auto resolver", () => {
           "Hi Customer,\n\nUse the forgot password link and follow the email instructions.\n\nHarshita Tripathi Support",
         metadata: expect.objectContaining({
           source: "auto-resolution",
-          model: "gpt-5-nano",
+          model: "gemini-2.5-flash",
           articleId: "article-password-reset",
           articleTitle: "Reset your password"
         })
@@ -260,12 +260,12 @@ describe("ticket auto resolver", () => {
     });
   });
 
-  it("does not call OpenAI when the API key is missing", async () => {
-    mocks.env.OPENAI_API_KEY = "";
+  it("does not call Google Gemini when the API key is missing", async () => {
+    mocks.env.GOOGLE_GENERATIVE_AI_API_KEY = "";
 
     await expect(autoResolveTicketById(42)).resolves.toEqual({
       resolved: false,
-      reason: "OPENAI_API_KEY is not configured."
+      reason: "GOOGLE_GENERATIVE_AI_API_KEY is not configured."
     });
 
     expect(findUniqueTicketMock).not.toHaveBeenCalled();
@@ -282,11 +282,11 @@ describe("ticket auto resolver", () => {
     });
   });
 
-  it("maps OpenAI quota errors to a service-unavailable response", async () => {
+  it("maps Google Gemini quota errors to a service-unavailable response", async () => {
     generateTextMock.mockRejectedValueOnce(
       new APICallError({
         message: "quota exceeded",
-        url: "https://api.openai.com/v1/responses",
+        url: "https://generativelanguage.googleapis.com/v1beta/models",
         requestBodyValues: {},
         statusCode: 429,
         isRetryable: false
@@ -295,7 +295,7 @@ describe("ticket auto resolver", () => {
 
     await expect(autoResolveTicketById(42)).rejects.toMatchObject({
       status: 503,
-      message: "OpenAI rate limit or quota was reached. Try again later or check billing."
+      message: "Google Gemini rate limit or quota was reached. Try again later or check billing."
     });
 
     expect(updateManyTicketStatusMock).toHaveBeenCalledWith({

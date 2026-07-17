@@ -5,7 +5,7 @@ import { classifyTicketById } from "./ticket-classifier";
 const mocks = vi.hoisted(() => ({
   env: {
     DATABASE_URL: "postgresql://helpdesk:helpdesk@localhost:5432/helpdesk",
-    OPENAI_API_KEY: "test-openai-key"
+    GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key"
   },
   on: vi.fn(),
   start: vi.fn(),
@@ -41,7 +41,7 @@ const classifyTicketByIdMock = vi.mocked(classifyTicketById);
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
-  mocks.env.OPENAI_API_KEY = "test-openai-key";
+  mocks.env.GOOGLE_GENERATIVE_AI_API_KEY = "test-gemini-key";
   mocks.start.mockResolvedValue(undefined);
   mocks.createQueue.mockResolvedValue(undefined);
   mocks.send.mockResolvedValue("job-1");
@@ -89,8 +89,8 @@ describe("ticket classification queue", () => {
     expect(classifyTicketByIdMock).toHaveBeenCalledWith(42);
   });
 
-  it("does not enqueue or start workers without an OpenAI API key", async () => {
-    mocks.env.OPENAI_API_KEY = "";
+  it("does not enqueue or start workers without an Google Gemini API key", async () => {
+    mocks.env.GOOGLE_GENERATIVE_AI_API_KEY = "";
     const { enqueueTicketClassification, startTicketClassificationWorker } = await import("./ticket-classification-queue");
 
     await expect(enqueueTicketClassification(42)).resolves.toBeNull();

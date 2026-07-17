@@ -278,7 +278,7 @@ ticketsRouter.post(
         type: AiOutputType.SUMMARY,
         content,
         metadata: {
-          model: "gpt-5-nano",
+          model: "gemini-2.5-flash",
           messageCount: ticket.messages.length
         }
       }

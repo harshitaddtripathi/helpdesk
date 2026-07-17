@@ -132,7 +132,7 @@ function mockTicketDetailRequests({
           ticketId: 1,
           type: "SUMMARY",
           content: generatedSummary,
-          metadata: { model: "gpt-5-nano" },
+          metadata: { model: "gemini-2.5-flash" },
           createdAt: "2026-07-01T12:10:00.000Z"
         }
       };

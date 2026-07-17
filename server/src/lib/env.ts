@@ -168,7 +168,7 @@ export const env = {
   BETTER_AUTH_URL: requireUrl("BETTER_AUTH_URL", isProduction ? undefined : `http://localhost:${port}`),
   BETTER_AUTH_SECRET: requireSecret("BETTER_AUTH_SECRET"),
   CODEX_API_KEY: readEnv("CODEX_API_KEY") ?? "",
-  OPENAI_API_KEY: readEnv("OPENAI_API_KEY") ?? "",
+  GOOGLE_GENERATIVE_AI_API_KEY: readEnv("GOOGLE_GENERATIVE_AI_API_KEY") ?? "",
   ENABLE_EMAIL_SIMULATOR: readBoolean("ENABLE_EMAIL_SIMULATOR", true),
   WEBHOOK_SECRET: webhookSecret,
   EMAIL_WEBHOOK_SECRET: emailWebhookSecret

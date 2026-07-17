@@ -27,7 +27,7 @@
     "db:demo-tickets": "bun run scripts/create-demo-tickets.ts"
   },
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.11",
+    "@ai-sdk/google": "^4.0.17",
     "@hookform/resolvers": "^5.4.0",
     "@prisma/adapter-pg": "7.6.0",
     "@prisma/client": "7.6.0",

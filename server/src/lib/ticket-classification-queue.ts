@@ -16,7 +16,7 @@ let bossStartPromise: Promise<PgBoss> | null = null;
 let workerStartPromise: Promise<string> | null = null;
 
 export async function enqueueTicketClassification(ticketId: number) {
-  if (!env.OPENAI_API_KEY) {
+  if (!env.GOOGLE_GENERATIVE_AI_API_KEY) {
     return null;
   }
 
@@ -26,8 +26,8 @@ export async function enqueueTicketClassification(ticketId: number) {
 }
 
 export async function startTicketClassificationWorker() {
-  if (!env.OPENAI_API_KEY) {
-    console.warn("OPENAI_API_KEY is not configured; ticket classification worker will not start.");
+  if (!env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    console.warn("GOOGLE_GENERATIVE_AI_API_KEY is not configured; ticket classification worker will not start.");
     return null;
   }
 
