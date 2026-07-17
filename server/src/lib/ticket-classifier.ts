@@ -50,8 +50,6 @@ export function ensureTicketClassifierConfigured() {
 }
 
 export async function classifyTicket(ticket: TicketClassificationContext): Promise<TicketClassificationResult> {
-  ensureTicketClassifierConfigured();
-
   if (ticket.category) {
     return {
       categorySlug: ticket.category.slug,
@@ -75,7 +73,7 @@ export async function classifyTicket(ticket: TicketClassificationContext): Promi
     };
   }
 
-  const categorySlug = await generateCategorySlug(ticket, categories);
+  const { categorySlug, method, errorMessage } = await getCategorySlug(ticket, categories);
   const category = categories.find((item) => item.slug === categorySlug);
 
   await prisma.aiOutput.create({
@@ -86,6 +84,8 @@ export async function classifyTicket(ticket: TicketClassificationContext): Promi
       metadata: {
         model: ticketClassifierModel,
         availableCategories: categories.map((item) => item.slug),
+        method,
+        ...(errorMessage ? { error: errorMessage } : {}),
         applied: Boolean(category)
       }
     }
@@ -112,6 +112,32 @@ export async function classifyTicket(ticket: TicketClassificationContext): Promi
     categorySlug: category.slug,
     applied: result.count > 0
   };
+}
+
+async function getCategorySlug(ticket: TicketClassificationContext, categories: TicketClassifierCategory[]) {
+  if (!env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    return {
+      categorySlug: inferFallbackCategorySlug(ticket, categories),
+      method: "keyword-fallback",
+      errorMessage: "GOOGLE_GENERATIVE_AI_API_KEY is not configured."
+    };
+  }
+
+  try {
+    return {
+      categorySlug: await generateCategorySlug(ticket, categories),
+      method: "gemini",
+      errorMessage: null
+    };
+  } catch (error) {
+    const aiError = toAiHttpError(error);
+
+    return {
+      categorySlug: inferFallbackCategorySlug(ticket, categories),
+      method: "keyword-fallback",
+      errorMessage: aiError.message
+    };
+  }
 }
 
 export async function classifyTicketById(ticketId: number) {
@@ -173,6 +199,37 @@ function buildClassificationPrompt(ticket: TicketClassificationContext, categori
     `Original request:\n${ticket.body}`,
     `Conversation history:\n${messages || "No conversation messages yet."}`
   ].join("\n\n---\n\n");
+}
+
+function inferFallbackCategorySlug(ticket: TicketClassificationContext, categories: TicketClassifierCategory[]) {
+  const availableSlugs = new Set(categories.map((category) => category.slug));
+  const text = [
+    ticket.subject,
+    ticket.body,
+    ...ticket.messages.map((message) => message.bodyText)
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (
+    availableSlugs.has("refund_request") &&
+    /\b(refund|money back|chargeback|cancel|cancellation|charged|billing|invoice|payment|duplicate charge|subscription)\b/.test(text)
+  ) {
+    return "refund_request";
+  }
+
+  if (
+    availableSlugs.has("technical_question") &&
+    /\b(error|bug|broken|dashboard|loading|login|password|reset|api|timeout|upload|import|email|verification|code|browser|cache|blank|crash|failed|not working|stuck)\b/.test(text)
+  ) {
+    return "technical_question";
+  }
+
+  if (availableSlugs.has("general_question")) {
+    return "general_question";
+  }
+
+  return categories[0]?.slug ?? null;
 }
 
 function toAiHttpError(error: unknown) {

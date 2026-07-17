@@ -228,7 +228,39 @@ describe("ticket classifier", () => {
     });
   });
 
-  it("maps Google Gemini quota errors to a service-unavailable response", async () => {
+  it("falls back to keyword classification when Google Gemini is not configured", async () => {
+    mocks.env.GOOGLE_GENERATIVE_AI_API_KEY = "";
+
+    await expect(classifyTicket(ticket)).resolves.toEqual({
+      categorySlug: "refund_request",
+      applied: true
+    });
+
+    expect(generateTextMock).not.toHaveBeenCalled();
+    expect(createAiOutputMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        ticketId: 102,
+        type: "CLASSIFICATION",
+        content: "refund_request",
+        metadata: expect.objectContaining({
+          method: "keyword-fallback",
+          error: "GOOGLE_GENERATIVE_AI_API_KEY is not configured.",
+          applied: true
+        })
+      })
+    });
+    expect(updateManyTicketsMock).toHaveBeenCalledWith({
+      where: {
+        id: 102,
+        categoryId: null
+      },
+      data: {
+        categoryId: "category-refund"
+      }
+    });
+  });
+
+  it("falls back to keyword classification when Google Gemini classification fails", async () => {
     generateTextMock.mockRejectedValueOnce(
       new APICallError({
         message: "quota exceeded",
@@ -239,9 +271,22 @@ describe("ticket classifier", () => {
       })
     );
 
-    await expect(classifyTicket(ticket)).rejects.toMatchObject({
-      status: 503,
-      message: "Google Gemini rate limit or quota was reached. Try again later or check billing."
+    await expect(classifyTicket(ticket)).resolves.toEqual({
+      categorySlug: "refund_request",
+      applied: true
+    });
+
+    expect(createAiOutputMock).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        ticketId: 102,
+        type: "CLASSIFICATION",
+        content: "refund_request",
+        metadata: expect.objectContaining({
+          method: "keyword-fallback",
+          error: expect.any(String),
+          applied: true
+        })
+      })
     });
   });
 });
