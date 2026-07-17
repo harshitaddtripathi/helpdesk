@@ -27,10 +27,6 @@ emailRouter.post(
   "/simulate",
   requireAdmin,
   asyncHandler(async (req, res) => {
-    if (!env.ENABLE_EMAIL_SIMULATOR) {
-      throw new HttpError(403, "Email simulator is disabled.");
-    }
-
     const body = simulatorEmailSchema.parse(req.body);
     const result = await receiveInboundEmail(body);
     const statusCode = result.status === "created" ? 201 : 200;
