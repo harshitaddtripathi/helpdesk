@@ -1,1 +1,1 @@
-export const emailSimulatorEnabled = import.meta.env.VITE_ENABLE_EMAIL_SIMULATOR === "true";
+export const emailSimulatorEnabled = import.meta.env.VITE_ENABLE_EMAIL_SIMULATOR !== "false";
