@@ -11,7 +11,7 @@ import {
   generateText
 } from "ai";
 import { z } from "zod";
-import { unassignTicketFromAiAgent } from "./ai-agent";
+import { assignTicketToHumanAgentFromAi } from "./ai-agent";
 import { formatCustomerReply, getCustomerFirstName, supportReplySignature } from "./customer-reply-format";
 import { env } from "./env";
 import { HttpError } from "./http";
@@ -56,7 +56,7 @@ export function isAiAutoResolutionOutputFilter() {
 
 export async function autoResolveTicketById(ticketId: number): Promise<AutoResolutionResult> {
   if (!env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    await unassignTicketFromAiAgent(ticketId);
+    await assignTicketToHumanAgentFromAi(ticketId);
     return { resolved: false, reason: "GOOGLE_GENERATIVE_AI_API_KEY is not configured." };
   }
 
@@ -70,12 +70,12 @@ export async function autoResolveTicketById(ticketId: number): Promise<AutoResol
     const result = await autoResolveTicket(context);
 
     if (!result.resolved) {
-      await unassignTicketFromAiAgent(ticketId);
+      await assignTicketToHumanAgentFromAi(ticketId);
     }
 
     return result;
   } catch (error) {
-    await unassignTicketFromAiAgent(ticketId);
+    await assignTicketToHumanAgentFromAi(ticketId);
     throw error;
   }
 }

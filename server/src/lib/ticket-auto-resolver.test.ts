@@ -122,9 +122,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   findUniqueTicketMock.mockResolvedValue(ticket);
   updateManyTicketStatusMock.mockResolvedValue({ count: 1 } as Awaited<ReturnType<typeof prisma.ticket.updateMany>>);
-  findAiAgentMock.mockResolvedValue({ id: "ai-agent-id" } as Awaited<
-    ReturnType<typeof prisma.user.findFirst>
-  >);
+  findAiAgentMock.mockImplementation((args) =>
+    Promise.resolve(
+      args?.where?.email === "ai-agent@example.com" ? { id: "ai-agent-id" } : { id: "human-agent-id" }
+    ) as ReturnType<typeof prisma.user.findFirst>
+  );
   findManyArticlesMock.mockResolvedValue([article]);
   mocks.updateManyTickets.mockResolvedValue({ count: 1 });
   mocks.createMessage.mockResolvedValue({});
@@ -256,7 +258,7 @@ describe("ticket auto resolver", () => {
         assignedToId: "ai-agent-id"
       },
       data: {
-        assignedToId: null
+        assignedToId: "human-agent-id"
       }
     });
   });

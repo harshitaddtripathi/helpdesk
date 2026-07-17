@@ -18,6 +18,25 @@ export async function findAiAgentId() {
   return aiAgent?.id ?? null;
 }
 
+export async function findAvailableHumanAgentId() {
+  const agent = await prisma.user.findFirst({
+    where: {
+      email: {
+        not: aiAgentEmail
+      },
+      role: UserRole.agent,
+      active: true,
+      deletedAt: null
+    },
+    orderBy: {
+      name: "asc"
+    },
+    select: { id: true }
+  });
+
+  return agent?.id ?? null;
+}
+
 export async function assignTicketToAiAgent(ticketId: number) {
   const aiAgentId = await findAiAgentId();
 
@@ -35,12 +54,14 @@ export async function assignTicketToAiAgent(ticketId: number) {
   return true;
 }
 
-export async function unassignTicketFromAiAgent(ticketId: number) {
+export async function assignTicketToHumanAgentFromAi(ticketId: number) {
   const aiAgentId = await findAiAgentId();
 
   if (!aiAgentId) {
     return false;
   }
+
+  const humanAgentId = await findAvailableHumanAgentId();
 
   const result = await prisma.ticket.updateMany({
     where: {
@@ -48,9 +69,13 @@ export async function unassignTicketFromAiAgent(ticketId: number) {
       assignedToId: aiAgentId
     },
     data: {
-      assignedToId: null
+      assignedToId: humanAgentId
     }
   });
 
   return result.count > 0;
+}
+
+export async function unassignTicketFromAiAgent(ticketId: number) {
+  return assignTicketToHumanAgentFromAi(ticketId);
 }
