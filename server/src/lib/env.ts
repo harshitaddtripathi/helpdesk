@@ -169,7 +169,7 @@ export const env = {
   BETTER_AUTH_SECRET: requireSecret("BETTER_AUTH_SECRET"),
   CODEX_API_KEY: readEnv("CODEX_API_KEY") ?? "",
   OPENAI_API_KEY: readEnv("OPENAI_API_KEY") ?? "",
-  ENABLE_EMAIL_SIMULATOR: readBoolean("ENABLE_EMAIL_SIMULATOR"),
+  ENABLE_EMAIL_SIMULATOR: readBoolean("ENABLE_EMAIL_SIMULATOR", true),
   WEBHOOK_SECRET: webhookSecret,
   EMAIL_WEBHOOK_SECRET: emailWebhookSecret
 };
