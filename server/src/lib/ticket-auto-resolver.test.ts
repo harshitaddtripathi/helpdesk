@@ -43,6 +43,9 @@ vi.mock("./prisma", () => ({
     knowledgeBaseArticle: {
       findMany: mocks.findManyArticles
     },
+    aiOutput: {
+      create: mocks.createAiOutput
+    },
     $transaction: mocks.transaction
   }
 }));
@@ -226,6 +229,7 @@ describe("ticket auto resolver", () => {
           "Hi Customer,\n\nUse the forgot password link and follow the email instructions.\n\nHarshita Tripathi Support",
         metadata: expect.objectContaining({
           source: "auto-resolution",
+          resolved: true,
           model: "gemini-3.5-flash",
           articleId: "article-password-reset",
           articleTitle: "Reset your password"
@@ -251,7 +255,19 @@ describe("ticket auto resolver", () => {
 
     expect(mocks.updateManyTickets).not.toHaveBeenCalled();
     expect(mocks.createMessage).not.toHaveBeenCalled();
-    expect(mocks.createAiOutput).not.toHaveBeenCalled();
+    expect(mocks.createAiOutput).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        ticketId: 42,
+        type: "SUGGESTED_REPLY",
+        content: expect.stringContaining("AI could not resolve this ticket"),
+        metadata: expect.objectContaining({
+          source: "auto-resolution",
+          resolved: false,
+          reason: "The request needs account access.",
+          assignedToHuman: true
+        })
+      })
+    });
     expect(updateManyTicketStatusMock).toHaveBeenCalledWith({
       where: {
         id: 42,
@@ -279,8 +295,8 @@ describe("ticket auto resolver", () => {
     expect(isAiAutoResolutionOutputFilter()).toEqual({
       type: "SUGGESTED_REPLY",
       metadata: {
-        path: ["source"],
-        equals: "auto-resolution"
+        path: ["resolved"],
+        equals: true
       }
     });
   });

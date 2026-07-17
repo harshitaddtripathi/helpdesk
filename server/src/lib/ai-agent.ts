@@ -58,7 +58,10 @@ export async function assignTicketToHumanAgentFromAi(ticketId: number) {
   const aiAgentId = await findAiAgentId();
 
   if (!aiAgentId) {
-    return false;
+    return {
+      assigned: false,
+      assignedToHuman: false
+    };
   }
 
   const humanAgentId = await findAvailableHumanAgentId();
@@ -73,9 +76,14 @@ export async function assignTicketToHumanAgentFromAi(ticketId: number) {
     }
   });
 
-  return result.count > 0;
+  return {
+    assigned: result.count > 0,
+    assignedToHuman: Boolean(humanAgentId && result.count > 0)
+  };
 }
 
 export async function unassignTicketFromAiAgent(ticketId: number) {
-  return assignTicketToHumanAgentFromAi(ticketId);
+  const result = await assignTicketToHumanAgentFromAi(ticketId);
+
+  return result.assigned;
 }

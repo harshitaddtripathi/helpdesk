@@ -48,16 +48,18 @@ export function isAiAutoResolutionOutputFilter() {
   return {
     type: AiOutputType.SUGGESTED_REPLY,
     metadata: {
-      path: ["source"],
-      equals: autoResolutionSource
+      path: ["resolved"],
+      equals: true
     }
   } as const;
 }
 
 export async function autoResolveTicketById(ticketId: number): Promise<AutoResolutionResult> {
   if (!env.GOOGLE_GENERATIVE_AI_API_KEY) {
-    await assignTicketToHumanAgentFromAi(ticketId);
-    return { resolved: false, reason: "GOOGLE_GENERATIVE_AI_API_KEY is not configured." };
+    const result = { resolved: false, reason: "GOOGLE_GENERATIVE_AI_API_KEY is not configured." } as const;
+    const assignment = await assignTicketToHumanAgentFromAi(ticketId);
+    await recordAutoResolutionHandoff(ticketId, result.reason, assignment.assignedToHuman);
+    return result;
   }
 
   const context = await getAutoResolutionContext(ticketId);
@@ -70,12 +72,14 @@ export async function autoResolveTicketById(ticketId: number): Promise<AutoResol
     const result = await autoResolveTicket(context);
 
     if (!result.resolved) {
-      await assignTicketToHumanAgentFromAi(ticketId);
+      const assignment = await assignTicketToHumanAgentFromAi(ticketId);
+      await recordAutoResolutionHandoff(ticketId, result.reason, assignment.assignedToHuman);
     }
 
     return result;
   } catch (error) {
-    await assignTicketToHumanAgentFromAi(ticketId);
+    const assignment = await assignTicketToHumanAgentFromAi(ticketId);
+    await recordAutoResolutionHandoff(ticketId, getErrorMessage(error), assignment.assignedToHuman);
     throw error;
   }
 }
@@ -244,6 +248,7 @@ async function applyAutoResolution(
         content: reply,
         metadata: {
           source: autoResolutionSource,
+          resolved: true,
           model: ticketAutoResolverModel,
           articleId: article.id,
           articleTitle: article.title,
@@ -254,6 +259,33 @@ async function applyAutoResolution(
 
     return true;
   });
+}
+
+async function recordAutoResolutionHandoff(ticketId: number, reason: string, assignedToHuman: boolean) {
+  await prisma.aiOutput.create({
+    data: {
+      ticketId,
+      type: AiOutputType.SUGGESTED_REPLY,
+      content: assignedToHuman
+        ? `AI could not resolve this ticket: ${reason} The ticket was assigned to a human agent.`
+        : `AI could not resolve this ticket: ${reason} No active human agent was available for assignment.`,
+      metadata: {
+        source: autoResolutionSource,
+        resolved: false,
+        model: ticketAutoResolverModel,
+        reason,
+        assignedToHuman
+      }
+    }
+  });
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
 }
 
 function selectCandidateArticles(ticket: AutoResolutionTicket) {

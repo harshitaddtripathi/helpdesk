@@ -155,6 +155,7 @@ export function TicketDetailPage() {
   }
 
   const latestSummary = ticket.aiOutputs?.find((output) => output.type === "SUMMARY");
+  const latestAiHandoff = ticket.aiOutputs?.find(isAiHandoffOutput);
 
   return (
     <div className="space-y-5">
@@ -171,6 +172,16 @@ export function TicketDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
         <section className="space-y-4">
+          {latestAiHandoff ? (
+            <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-semibold text-amber-950">AI handoff</p>
+              <p className="mt-2 text-sm leading-6 text-amber-900">{latestAiHandoff.content}</p>
+              <p className="mt-2 text-xs text-amber-800">
+                Recorded {new Date(latestAiHandoff.createdAt).toLocaleString()}
+              </p>
+            </section>
+          ) : null}
+
           <TicketDetail ticket={ticket} />
 
           <ReplyThread messages={ticket.messages} />
@@ -244,4 +255,20 @@ export function TicketDetailPage() {
       </div>
     </div>
   );
+}
+
+function isAiHandoffOutput(output: AiOutput) {
+  if (output.type !== "SUGGESTED_REPLY") {
+    return false;
+  }
+
+  const metadata = output.metadata;
+
+  if (typeof metadata !== "object" || metadata === null) {
+    return false;
+  }
+
+  const values = metadata as Record<string, unknown>;
+
+  return values.source === "auto-resolution" && values.resolved === false;
 }

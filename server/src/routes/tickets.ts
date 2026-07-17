@@ -162,7 +162,6 @@ ticketsRouter.get(
           },
           messages: { orderBy: { createdAt: "asc" } },
           aiOutputs: {
-            where: { type: AiOutputType.SUMMARY },
             orderBy: { createdAt: "desc" }
           }
         }
