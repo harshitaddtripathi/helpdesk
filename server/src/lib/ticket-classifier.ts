@@ -11,10 +11,11 @@ import {
   generateText
 } from "ai";
 import { env } from "./env";
+import { getGoogleGenerativeAiModel } from "./google-generative-ai";
 import { HttpError } from "./http";
 import { prisma } from "./prisma";
 
-const ticketClassifierModel = env.GOOGLE_GENERATIVE_AI_MODEL;
+const ticketClassifierModel = getGoogleGenerativeAiModel();
 const uncategorizedOutput = "uncategorized";
 
 type TicketClassifierCategory = {

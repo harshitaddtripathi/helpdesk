@@ -8,11 +8,14 @@ import {
   generateText
 } from "ai";
 import { env } from "./env";
+import { getGoogleGenerativeAiModel } from "./google-generative-ai";
 import { formatCustomerReply, getCustomerFirstName, supportReplySignature } from "./customer-reply-format";
 import { HttpError } from "./http";
 import { prisma } from "./prisma";
 
 export type TicketPolishContext = NonNullable<Awaited<ReturnType<typeof getTicketPolishContext>>>;
+
+const replyPolisherModel = getGoogleGenerativeAiModel();
 
 export async function getTicketPolishContext(ticketId: number) {
   return prisma.ticket.findUnique({
@@ -36,7 +39,7 @@ export function ensureReplyPolisherConfigured() {
 export async function polishReply(ticket: TicketPolishContext, draft: string, agentName: string) {
   try {
     const { text } = await generateText({
-      model: google(env.GOOGLE_GENERATIVE_AI_MODEL),
+      model: google(replyPolisherModel),
       instructions:
         "Polish a helpdesk agent's draft reply. Preserve the agent's meaning, facts, and commitments. " +
         "Make it clear, concise, professional, and empathetic. Do not invent policies, refunds, timelines, " +
@@ -107,11 +110,11 @@ function getAiErrorMessage(error: APICallError) {
   }
 
   if (error.statusCode === 403) {
-    return `Google Gemini rejected this request. Check that the API key has access to ${env.GOOGLE_GENERATIVE_AI_MODEL}.`;
+    return `Google Gemini rejected this request. Check that the API key has access to ${replyPolisherModel}.`;
   }
 
   if (error.statusCode === 404) {
-    return `Google Gemini could not find ${env.GOOGLE_GENERATIVE_AI_MODEL} for this API key.`;
+    return `Google Gemini could not find ${replyPolisherModel} for this API key.`;
   }
 
   if (error.statusCode === 429) {

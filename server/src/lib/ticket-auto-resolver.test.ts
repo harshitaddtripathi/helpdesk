@@ -11,7 +11,7 @@ import { prisma } from "./prisma";
 const mocks = vi.hoisted(() => ({
   env: {
     GOOGLE_GENERATIVE_AI_API_KEY: "test-gemini-key",
-    GOOGLE_GENERATIVE_AI_MODEL: "gemini-3.5-flash"
+    GOOGLE_GENERATIVE_AI_MODEL: "gemini-2.0-flash"
   },
   findUniqueTicket: vi.fn(),
   updateTicket: vi.fn(),
@@ -179,8 +179,7 @@ describe("ticket auto resolver", () => {
     });
     expect(findManyArticlesMock).toHaveBeenCalledWith({
       where: {
-        active: true,
-        OR: [{ categoryId: "category-technical" }, { categoryId: null }]
+        active: true
       },
       include: { category: true },
       orderBy: { updatedAt: "desc" },

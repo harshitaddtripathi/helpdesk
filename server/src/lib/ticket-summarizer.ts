@@ -8,8 +8,11 @@ import {
   generateText
 } from "ai";
 import { env } from "./env";
+import { getGoogleGenerativeAiModel } from "./google-generative-ai";
 import { HttpError } from "./http";
 import { prisma } from "./prisma";
+
+const ticketSummarizerModel = getGoogleGenerativeAiModel();
 
 export type TicketSummaryContext = NonNullable<Awaited<ReturnType<typeof getTicketSummaryContext>>>;
 
@@ -40,7 +43,7 @@ export function ensureTicketSummarizerConfigured() {
 export async function summarizeTicket(ticket: TicketSummaryContext) {
   try {
     const { text } = await generateText({
-      model: google(env.GOOGLE_GENERATIVE_AI_MODEL),
+      model: google(ticketSummarizerModel),
       instructions:
         "Summarize a helpdesk ticket and its conversation history for a support agent. " +
         "Use only the ticket content. Do not invent facts, policies, refunds, timelines, or commitments. " +
@@ -110,11 +113,11 @@ function getAiErrorMessage(error: APICallError) {
   }
 
   if (error.statusCode === 403) {
-    return `Google Gemini rejected this request. Check that the API key has access to ${env.GOOGLE_GENERATIVE_AI_MODEL}.`;
+    return `Google Gemini rejected this request. Check that the API key has access to ${ticketSummarizerModel}.`;
   }
 
   if (error.statusCode === 404) {
-    return `Google Gemini could not find ${env.GOOGLE_GENERATIVE_AI_MODEL} for this API key.`;
+    return `Google Gemini could not find ${ticketSummarizerModel} for this API key.`;
   }
 
   if (error.statusCode === 429) {

@@ -9,7 +9,7 @@ import { ticketStatuses } from "core/constants/ticket-status";
 import { z } from "zod";
 import { asyncHandler, HttpError, requireStringParam, validate } from "../lib/http";
 import { prisma } from "../lib/prisma";
-import { env } from "../lib/env";
+import { getGoogleGenerativeAiModel } from "../lib/google-generative-ai";
 import {
   ensureReplyPolisherConfigured,
   getTicketPolishContext,
@@ -278,7 +278,7 @@ ticketsRouter.post(
         type: AiOutputType.SUMMARY,
         content,
         metadata: {
-          model: env.GOOGLE_GENERATIVE_AI_MODEL,
+          model: getGoogleGenerativeAiModel(),
           messageCount: ticket.messages.length
         }
       }

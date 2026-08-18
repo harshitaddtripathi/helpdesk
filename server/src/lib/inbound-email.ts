@@ -22,11 +22,15 @@ export async function receiveInboundEmail(body: InboundEmailInput): Promise<Inbo
 
   if (existingTicket) {
     const message = await appendInboundMessage(existingTicket.id, body);
-    const ticket = !existingTicket.categoryId
-      ? await classifyAndRefreshTicket(existingTicket.id, existingTicket)
-      : existingTicket;
+    if (!existingTicket.categoryId) {
+      await classifyAndRefreshTicket(existingTicket.id, existingTicket);
+    }
 
-    queueAutoResolution(existingTicket.id);
+    await autoResolveTicketById(existingTicket.id).catch((error) => {
+      console.warn(`Failed to auto-resolve ticket ${existingTicket.id}:`, error);
+    });
+
+    const ticket = (await findTicketWithCategory(existingTicket.id)) ?? existingTicket;
 
     return {
       status: "appended",
@@ -38,12 +42,17 @@ export async function receiveInboundEmail(body: InboundEmailInput): Promise<Inbo
   const ticket = await createTicketFromEmail(body, subject);
 
   await assignTicketToAiAgent(ticket.id);
-  const classifiedTicket = await classifyAndRefreshTicket(ticket.id, ticket);
-  queueAutoResolution(ticket.id);
+  await classifyAndRefreshTicket(ticket.id, ticket);
+
+  await autoResolveTicketById(ticket.id).catch((error) => {
+    console.warn(`Failed to auto-resolve ticket ${ticket.id}:`, error);
+  });
+
+  const refreshedTicket = (await findTicketWithCategory(ticket.id)) ?? ticket;
 
   return {
     status: "created",
-    ticket: classifiedTicket
+    ticket: refreshedTicket
   };
 }
 
@@ -98,12 +107,6 @@ function createTicketFromEmail(body: InboundEmailInput, subject: string) {
       category: true,
       messages: true
     }
-  });
-}
-
-function queueAutoResolution(ticketId: number) {
-  void autoResolveTicketById(ticketId).catch((error) => {
-    console.warn(`Failed to auto-resolve ticket ${ticketId}:`, error);
   });
 }
 

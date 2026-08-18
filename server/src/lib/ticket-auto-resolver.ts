@@ -14,10 +14,11 @@ import { z } from "zod";
 import { assignTicketToHumanAgentFromAi } from "./ai-agent";
 import { formatCustomerReply, getCustomerFirstName, supportReplySignature } from "./customer-reply-format";
 import { env } from "./env";
+import { getGoogleGenerativeAiModel } from "./google-generative-ai";
 import { HttpError } from "./http";
 import { prisma } from "./prisma";
 
-const ticketAutoResolverModel = env.GOOGLE_GENERATIVE_AI_MODEL;
+const ticketAutoResolverModel = getGoogleGenerativeAiModel();
 const autoResolutionSource = "auto-resolution";
 const maxCandidateArticles = 8;
 const maxFetchedArticles = 50;
@@ -158,8 +159,7 @@ async function getAutoResolutionContext(ticketId: number) {
 
   const candidateArticles = await prisma.knowledgeBaseArticle.findMany({
     where: {
-      active: true,
-      OR: ticket.categoryId ? [{ categoryId: ticket.categoryId }, { categoryId: null }] : undefined
+      active: true
     },
     include: { category: true },
     orderBy: { updatedAt: "desc" },
